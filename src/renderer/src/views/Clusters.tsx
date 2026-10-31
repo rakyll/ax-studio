@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import {
   Boxes, Check, Circle, CircleCheck, Copy, CircleDashed, CircleX, Cpu, ExternalLink, Layers3, Loader, Play, Plus, RefreshCw, Server,
-  Square, Trash2, TriangleAlert, Wrench, type LucideIcon,
+  Square, SquareTerminal, Trash2, TriangleAlert, Wrench, type LucideIcon,
 } from 'lucide-react'
 import { clusters, useClusters, STAGES, type Cluster, type Operation, type Replicas } from '../model/clusters'
 import { useStore } from '../model/store'
@@ -115,8 +115,7 @@ function ClusterCard({ cluster: cl, selected, onSelect }: { cluster: Cluster; se
   }
 
   return (
-    <div className={`card cluster-card ${mine ? 'busy' : ''} ${current || selected ? 'highlight' : ''}`} onClick={onSelect}
-      title={selected ? undefined : 'Show how to use this cluster with kubectl'}>
+    <div className={`card cluster-card ${mine ? 'busy' : ''} ${current || selected ? 'highlight' : ''}`}>
       <div className="row cluster-head">
         <div className="cluster-icon"><Boxes size={16} /></div>
         <div className="cluster-name">
@@ -125,6 +124,10 @@ function ClusterCard({ cluster: cl, selected, onSelect }: { cluster: Cluster; se
         </div>
         <div className="spacer" />
         <Overall rows={rows} />
+        <button className={`btn small icon ghost ${selected ? 'active' : ''}`} onClick={onSelect}
+          title={selected ? 'Hide terminal commands' : 'Use this cluster from a terminal'}>
+          <SquareTerminal size={15} />
+        </button>
       </div>
 
       <div className="layer-stack">
@@ -145,7 +148,7 @@ function ClusterCard({ cluster: cl, selected, onSelect }: { cluster: Cluster; se
 
       {selected && <ConnectCommands cluster={cl} />}
 
-      <div className="row cluster-actions" onClick={(e) => e.stopPropagation()}>
+      <div className="row cluster-actions">
         {axReady && (
           <button className="btn small primary" disabled={busy || current} onClick={() => void clusters.open(cl)}
             title={cl.inKubeconfig ? `Switch AX Studio to ${cl.context}` : `Add ${cl.context} to your kubeconfig and switch AX Studio to it`}>
@@ -174,13 +177,12 @@ function ConnectCommands({ cluster: cl }: { cluster: Cluster }) {
   const provider = c.runtime?.runtime === 'podman' ? 'KIND_EXPERIMENTAL_PROVIDER=podman ' : ''
   const commands = [
     { note: `Import ${cl.context} into your kubeconfig (adds or refreshes it and makes it current)`, cmd: `${provider}kind export kubeconfig --name ${cl.name}` },
-    { note: 'Or use it only in this shell, leaving your kubeconfig alone', cmd: `${provider}kind get kubeconfig --name ${cl.name} > ~/.kube/${cl.context} && export KUBECONFIG=~/.kube/${cl.context}` },
     ...(cl.inKubeconfig ? [{ note: 'Already imported: switch kubectl to it', cmd: `kubectl config use-context ${cl.context}` }] : []),
     { note: 'Or target it per command', cmd: `kubectl --context ${cl.context} get pods -A` },
     ...(cl.ax ? [{ note: 'Use it with ax', cmd: `ax --context ${cl.context} get tasks` }] : []),
   ]
   return (
-    <div className="connect" onClick={(e) => e.stopPropagation()}>
+    <div className="connect">
       {commands.map((x) => <CommandLine key={x.cmd} note={x.note} cmd={x.cmd} />)}
     </div>
   )

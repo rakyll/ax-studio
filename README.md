@@ -12,7 +12,7 @@ and packaged as a native app for macOS, Windows and Linux.
 | **Topology** | Sources → workspaces → tasks graph; running edges animate. |
 | **Designer** | Form + live composition diagram + generated YAML (or raw edit). Templates, open/save, apply. |
 | **Deploy** | Kubernetes pipeline: Agent Substrate → Build & push images → AX → Verify, with a live console. |
-| **Clusters** | Create, inspect and delete local AX clusters on kind: each shows its Kind, Agent Substrate and AX layers. Install or reinstall AX, open a cluster in Studio, or click a cluster for its kubectl and ax commands. |
+| **Clusters** | Create, inspect and delete local AX clusters on kind: each shows its Kind, Agent Substrate and AX layers. Install or reinstall AX, open a cluster in Studio, or click its terminal icon for the commands to import its kubectl context and use it with kubectl and ax. |
 
 ## Screenshots
 
