@@ -56,15 +56,20 @@ lastarg() { for a in "$@"; do l=$a; done; printf '%s' "$l"; }
 case "$1" in
   run)
     shift
-    n=$#
+    n=$# name=
     while [ "$n" -gt 0 ]; do
       a=$1; shift; n=$((n - 1))
       case "$a" in
+        --name) name=$1; set -- "$@" "$a" "$1"; shift; n=$((n - 1)) ;;
+        --name=*) name=${a#--name=}; set -- "$@" "$a" ;;
         -p|--publish) case "$1" in "[::1]:"*) ;; *) set -- "$@" "$a" "$1" ;; esac; shift; n=$((n - 1)) ;;
         -p\[::1\]:*|--publish=\[::1\]:*) ;;
         *) set -- "$@" "$a" ;;
       esac
     done
+    if [ -n "$name" ] && [ "$(podman inspect -f '{{.State.Running}}' "$name" 2>/dev/null)" = false ]; then
+      podman rm -f "$name" >/dev/null
+    fi
     exec podman run "$@" ;;
   pull)
     shift
