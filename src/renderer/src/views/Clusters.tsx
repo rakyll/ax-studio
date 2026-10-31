@@ -124,9 +124,9 @@ function ClusterCard({ cluster: cl, selected, onSelect }: { cluster: Cluster; se
         </div>
         <div className="spacer" />
         <Overall rows={rows} />
-        <button className={`btn small icon ghost ${selected ? 'active' : ''}`} onClick={onSelect}
+        <button className={`btn icon term-btn ${selected ? 'active' : ''}`} onClick={onSelect}
           title={selected ? 'Hide terminal commands' : 'Use this cluster from a terminal'}>
-          <SquareTerminal size={15} />
+          <SquareTerminal size={16} />
         </button>
       </div>
 
