@@ -173,8 +173,9 @@ function ConnectCommands({ cluster: cl }: { cluster: Cluster }) {
   const c = useClusters()
   const provider = c.runtime?.runtime === 'podman' ? 'KIND_EXPERIMENTAL_PROVIDER=podman ' : ''
   const commands = [
-    ...(cl.inKubeconfig ? [] : [{ note: 'Add the context to your kubeconfig (this also switches to it)', cmd: `${provider}kind export kubeconfig --name ${cl.name}` }]),
-    { note: 'Switch kubectl to this cluster', cmd: `kubectl config use-context ${cl.context}` },
+    { note: `Import ${cl.context} into your kubeconfig (adds or refreshes it and makes it current)`, cmd: `${provider}kind export kubeconfig --name ${cl.name}` },
+    { note: 'Or use it only in this shell, leaving your kubeconfig alone', cmd: `${provider}kind get kubeconfig --name ${cl.name} > ~/.kube/${cl.context} && export KUBECONFIG=~/.kube/${cl.context}` },
+    ...(cl.inKubeconfig ? [{ note: 'Already imported: switch kubectl to it', cmd: `kubectl config use-context ${cl.context}` }] : []),
     { note: 'Or target it per command', cmd: `kubectl --context ${cl.context} get pods -A` },
     ...(cl.ax ? [{ note: 'Use it with ax', cmd: `ax --context ${cl.context} get tasks` }] : []),
   ]

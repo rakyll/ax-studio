@@ -59,6 +59,7 @@
 .connect-cmd {
   gap: 4px; padding: 4px 4px 4px 10px; border-radius: 6px; background: var(--console); color: var(--console-text);
 }
-.connect-cmd code { flex: 1; min-width: 0; font-family: var(--mono); font-size: 11.5px; white-space: nowrap; overflow-x: auto; }
+.connect-cmd { align-items: flex-start; }
+.connect-cmd code { flex: 1; min-width: 0; padding: 4px 0; font-family: var(--mono); font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .connect-cmd .btn.ghost { color: #a9a9ae; }
 .connect-cmd .btn.ghost:hover:not(:disabled) { background: rgba(255,255,255,.08); }
