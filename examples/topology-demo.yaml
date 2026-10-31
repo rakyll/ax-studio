@@ -1,0 +1,208 @@
+# A multi-team setup that exercises every part of the Topology view.
+#   ax --context local apply -f examples/topology-demo.yaml
+#   Tasks start suspended; resume the ones you want running with `ax resume task <name>`.
+---
+apiVersion: ax.io/v1alpha1
+kind: Workspace
+metadata:
+  name: web-frontend
+  atespace: default
+spec:
+  git:
+    - name: app
+      repo: https://github.com/vitejs/vite-plugin-react.git
+      branch: main
+    - name: design-system
+      repo: https://github.com/primer/css.git
+      branch: main
+  mcp:
+    servers:
+      - name: github
+        endpoint: https://api.githubcopilot.com/mcp/
+      - name: figma
+        endpoint: http://127.0.0.1:3845/mcp
+---
+apiVersion: ax.io/v1alpha1
+kind: Workspace
+metadata:
+  name: docs-site
+  atespace: default
+spec:
+  git:
+    - name: docs
+      repo: https://github.com/google/go-cmp.git
+      branch: master
+  files:
+    - path: STYLE.md
+      content: |
+        Write in plain language. Keep sentences short.
+---
+apiVersion: ax.io/v1alpha1
+kind: Workspace
+metadata:
+  name: infra-ops
+  atespace: default
+spec:
+  git:
+    - name: terraform
+      repo: https://github.com/terraform-google-modules/terraform-example-foundation.git
+      branch: main
+    - name: helm-charts
+      repo: https://github.com/bitnami/charts.git
+      branch: main
+  mcp:
+    servers:
+      - name: kubernetes
+        endpoint: http://k8s-mcp.tools.svc:8080/mcp
+---
+apiVersion: ax.io/v1alpha1
+kind: Task
+metadata:
+  name: fe-refactor-nav
+  atespace: default
+spec:
+  image: "gcr.io/dberkov-gke-dev3/ax-task-runner@sha256:0486c500370fc16ea722c165ff63855a552fc31206a9e036a43f55f9b2242861"
+  command: ["sh", "-c", "sleep infinity"]
+  env:
+    - name: GOAL
+      value: "migrate navbar to new tokens"
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  workspace:
+    name: web-frontend
+  debug: true
+---
+apiVersion: ax.io/v1alpha1
+kind: Task
+metadata:
+  name: fe-a11y-audit
+  atespace: default
+spec:
+  image: "gcr.io/dberkov-gke-dev3/ax-task-runner@sha256:0486c500370fc16ea722c165ff63855a552fc31206a9e036a43f55f9b2242861"
+  command: ["sh", "-c", "sleep infinity"]
+  env:
+    - name: GOAL
+      value: "fix contrast issues"
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  workspace:
+    name: web-frontend
+  debug: true
+---
+apiVersion: ax.io/v1alpha1
+kind: Task
+metadata:
+  name: fe-storybook
+  atespace: default
+spec:
+  image: "gcr.io/dberkov-gke-dev3/ax-task-runner@sha256:0486c500370fc16ea722c165ff63855a552fc31206a9e036a43f55f9b2242861"
+  command: ["sh", "-c", "sleep infinity"]
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  workspace:
+    name: web-frontend
+  debug: true
+---
+apiVersion: ax.io/v1alpha1
+kind: Task
+metadata:
+  name: docs-sweep
+  atespace: default
+spec:
+  image: "gcr.io/dberkov-gke-dev3/ax-task-runner@sha256:0486c500370fc16ea722c165ff63855a552fc31206a9e036a43f55f9b2242861"
+  command: ["sh", "-c", "ls /workspace && echo done"]
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  workspace:
+    name: docs-site
+  debug: true
+---
+apiVersion: ax.io/v1alpha1
+kind: Task
+metadata:
+  name: ops-drift-check
+  atespace: default
+spec:
+  image: "gcr.io/dberkov-gke-dev3/ax-task-runner@sha256:0486c500370fc16ea722c165ff63855a552fc31206a9e036a43f55f9b2242861"
+  command: ["sh", "-c", "sleep infinity"]
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  workspace:
+    name: infra-ops
+  debug: true
+---
+apiVersion: ax.io/v1alpha1
+kind: Task
+metadata:
+  name: ops-upgrade-charts
+  atespace: default
+spec:
+  image: "gcr.io/dberkov-gke-dev3/ax-task-runner@sha256:0486c500370fc16ea722c165ff63855a552fc31206a9e036a43f55f9b2242861"
+  command: ["sh", "-c", "sleep infinity"]
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  workspace:
+    name: infra-ops
+  debug: true
+---
+apiVersion: ax.io/v1alpha1
+kind: Task
+metadata:
+  name: scratch-notebook
+  atespace: default
+spec:
+  image: "gcr.io/dberkov-gke-dev3/ax-task-runner@sha256:0486c500370fc16ea722c165ff63855a552fc31206a9e036a43f55f9b2242861"
+  command: ["sh", "-c", "sleep infinity"]
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  debug: true
+---
+apiVersion: ax.io/v1alpha1
+kind: Model
+metadata:
+  name: claude-opus
+  atespace: default
+spec:
+  provider: anthropic
+  model: claude-opus-5-5
+  secretKey:
+    name: anthropic
+    key: api-key
+---
+apiVersion: ax.io/v1alpha1
+kind: Model
+metadata:
+  name: claude-haiku
+  atespace: default
+spec:
+  provider: anthropic
+  model: claude-haiku-4-5-20251001
+  secretKey:
+    name: anthropic
+    key: api-key
+---
+apiVersion: ax.io/v1alpha1
+kind: Model
+metadata:
+  name: gemini-pro
+  atespace: default
+spec:
+  provider: google
+  model: gemini-2.5-pro
+  secretKey:
+    name: gemini
+    key: api-key

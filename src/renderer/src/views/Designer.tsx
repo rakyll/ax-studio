@@ -1,0 +1,470 @@
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import {
+  Box, Check, CircleCheck, CircleX, Copy, Cpu, FileCode2, FolderGit2, FolderOpen, LayoutGrid, MemoryStick, Play,
+  Plus, Save, Sparkles, TriangleAlert, X, type LucideIcon,
+} from 'lucide-react'
+import { Dropdown } from '../App'
+import { PageHeader, Segmented, Toggle } from '../components'
+import {
+  TEMPLATES, canApply, cpuString, designer, generate, isSecret, issues, memoryString, uid, useDraft,
+  type ConfigMode, type Draft, type WorkspaceMode,
+} from '../model/designer'
+import { validateImage, validateLabel } from '../model/resources'
+import { store, useStore } from '../model/store'
+import { CompositionDiagram } from './designer/CompositionDiagram'
+import { YamlView } from './designer/YamlView'
+import '../styles/designer.css'
+
+type ApplyResult = { ok: boolean; text: string } | null
+
+export function Designer() {
+  const d = useDraft()
+  const s = useStore()
+  const [result, setResult] = useState<ApplyResult>(null)
+  const [applying, setApplying] = useState(false)
+  const [split, setSplit] = useState(() => Number(localStorage.getItem('ax-studio.designer.split')) || 0.5)
+
+  const apply = useCallback(async () => {
+    const draft = designer.draft
+    if (!canApply(draft) || applying) return
+    setApplying(true)
+    setResult(null)
+    const r = await store.apply(generate(draft))
+    setResult({ ok: r.ok, text: r.ok ? r.stdout.trim() : r.error })
+    setApplying(false)
+  }, [applying])
+
+  useEffect(() => {
+    const onApply = () => void apply()
+    window.addEventListener('ax:apply', onApply)
+    return () => window.removeEventListener('ax:apply', onApply)
+  }, [apply])
+
+  // Clear a stale result once the draft changes.
+  useEffect(() => setResult(null), [d])
+
+  return (
+    <div className="designer">
+      <div className="designer-head">
+        <PageHeader title="Designer" subtitle="Compose a task, its workspace and model, then apply.">
+          <div className="row">
+            <Dropdown label={<><LayoutGrid size={14} />Templates</>}>
+              {(close) => TEMPLATES.map((t) => (
+                <button key={t.id} className="menu-item" onClick={() => { designer.load(t.id); close() }}>
+                  <span className="menu-check" />
+                  <span className="col">
+                    <span>{t.title}</span>
+                    <span className="caption faint">{t.detail}</span>
+                  </span>
+                </button>
+              ))}
+            </Dropdown>
+            <button className="btn" title="Open manifest (⌘O)" onClick={() => void designer.open(s.settings.repoPath)}>
+              <FolderOpen size={14} />Open
+            </button>
+            <button className="btn" title="Save manifest (⌘S)" onClick={() => void designer.save()}>
+              <Save size={14} />Save
+            </button>
+            <button className="btn primary" disabled={!canApply(d) || applying} title="Apply (⌘↩)" onClick={() => void apply()}>
+              <Play size={13} fill="currentColor" />{applying ? 'Applying…' : 'Apply'}
+            </button>
+          </div>
+        </PageHeader>
+      </div>
+      <SplitPane fraction={split} onChange={(f) => { setSplit(f); localStorage.setItem('ax-studio.designer.split', String(f)) }}
+        left={<DesignerForm d={d} />}
+        right={
+          <div className="designer-right">
+            <div className="designer-diagram dotgrid"><CompositionDiagram d={d} /></div>
+            <YamlPane d={d} />
+          </div>
+        } />
+      <Footer d={d} result={result} />
+    </div>
+  )
+}
+
+// MARK: Layout
+
+function SplitPane({ left, right, fraction, onChange }: {
+  left: ReactNode
+  right: ReactNode
+  fraction: number
+  onChange: (f: number) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const startDrag = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const move = (ev: MouseEvent) => {
+      const r = ref.current?.getBoundingClientRect()
+      if (!r) return
+      onChange(Math.min(0.72, Math.max(0.3, (ev.clientX - r.left) / r.width)))
+    }
+    const up = () => {
+      window.removeEventListener('mousemove', move)
+      window.removeEventListener('mouseup', up)
+      document.body.style.cursor = ''
+    }
+    document.body.style.cursor = 'col-resize'
+    window.addEventListener('mousemove', move)
+    window.addEventListener('mouseup', up)
+  }
+  return (
+    <div className="split" ref={ref}>
+      <div className="split-pane" style={{ flexBasis: `${fraction * 100}%` }}>{left}</div>
+      <div className="split-handle" onMouseDown={startDrag}><span /></div>
+      <div className="split-pane split-right">{right}</div>
+    </div>
+  )
+}
+
+function Section({ icon: Icon, tint, title, trailing, children }: {
+  icon: LucideIcon
+  tint: string
+  title: string
+  trailing?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section className="ds-card card">
+      <header className="ds-header">
+        <span className="ds-icon" style={{ '--tint': tint } as CSSProperties}><Icon size={13} /></span>
+        <h2>{title}</h2>
+        <span className="spacer" />
+        {trailing}
+      </header>
+      <div className="ds-body">{children}</div>
+    </section>
+  )
+}
+
+function Field({ label, error, warn, children }: { label: string; error?: string | null; warn?: boolean; children: ReactNode }) {
+  return (
+    <div className="ds-field">
+      <label>{label}</label>
+      <div className="col" style={{ gap: 3, minWidth: 0 }}>
+        {children}
+        {error && <span className={`ds-error caption ${warn ? 'warn' : ''}`}>{error}</span>}
+      </div>
+    </div>
+  )
+}
+
+const set = (patch: Partial<Draft>) => designer.set(patch)
+
+function update<T extends { id: number }>(list: T[], id: number, patch: Partial<T>): T[] {
+  return list.map((x) => (x.id === id ? { ...x, ...patch } : x))
+}
+
+function RowRemove({ onClick }: { onClick: () => void }) {
+  return <button className="btn small icon ghost" title="Remove" onClick={onClick}><X size={13} /></button>
+}
+
+function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return <button className="btn small ghost ds-add" onClick={onClick}><Plus size={13} />{label}</button>
+}
+
+/** Slider with a filled meter track and a value label. */
+function Meter({ icon: Icon, label, value, min, max, step, display, onChange, ticks }: {
+  icon: LucideIcon
+  label: string
+  value: number
+  min: number
+  max: number
+  step: number
+  display: string
+  ticks: string[]
+  onChange: (v: number) => void
+}) {
+  const pct = ((value - min) / (max - min)) * 100
+  return (
+    <div className="meter">
+      <div className="row meter-top">
+        <Icon size={14} className="faint" />
+        <span className="muted">{label}</span>
+        <span className="spacer" />
+        <strong className="mono meter-value">{display}</strong>
+      </div>
+      <div className="meter-track" style={{ '--pct': `${pct}%` } as CSSProperties}>
+        <div className="meter-fill" />
+        <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(+e.target.value)} />
+      </div>
+      <div className="meter-ticks caption faint">{ticks.map((t) => <span key={t}>{t}</span>)}</div>
+    </div>
+  )
+}
+
+// MARK: Form
+
+function DesignerForm({ d }: { d: Draft }) {
+  const s = useStore()
+  if (d.rawMode) {
+    return (
+      <div className="ds-form">
+        <div className="ds-card card ds-raw">
+          <FileCode2 size={22} className="faint" />
+          <div className="col" style={{ gap: 2 }}>
+            <strong>Editing YAML directly</strong>
+            <span className="muted">The form is paused while you edit the manifest on the right.</span>
+          </div>
+          <span className="spacer" />
+          <button className="btn" onClick={() => set({ rawMode: false })}>Back to the visual editor</button>
+        </div>
+      </div>
+    )
+  }
+  const nameErr = validateLabel(d.name)
+  const atesErr = d.atespace ? validateLabel(d.atespace) : null
+  const imgErr = d.image.includes('REPLACE_WITH') ? 'replace the placeholder digest' : validateImage(d.image)
+
+  return (
+    <div className="ds-form">
+      <Section icon={Box} tint="var(--accent)" title="Task">
+        <Field label="Name" error={nameErr}>
+          <input className={`input ${nameErr ? 'invalid' : ''}`} value={d.name} onChange={(e) => set({ name: e.target.value })} />
+        </Field>
+        <Field label="Atespace" error={atesErr}>
+          <input className={`input ${atesErr ? 'invalid' : ''}`} value={d.atespace} placeholder={s.atespace}
+            onChange={(e) => set({ atespace: e.target.value })} />
+        </Field>
+        <Field label="Image" error={imgErr} warn={!d.image.includes('REPLACE_WITH')}>
+          <input className="input mono" value={d.image} placeholder="server default runner" spellCheck={false}
+            onChange={(e) => set({ image: e.target.value })} />
+        </Field>
+        <Field label="Command">
+          <input className="input mono" value={d.command} placeholder="runner decides" spellCheck={false}
+            onChange={(e) => set({ command: e.target.value })} />
+        </Field>
+        <Field label="Environment">
+          <div className="col" style={{ gap: 6 }}>
+            {d.env.map((kv) => (
+              <div key={kv.id} className="ds-row">
+                <input className="input mono" style={{ flex: '0 0 40%' }} value={kv.key} placeholder="NAME" spellCheck={false}
+                  onChange={(e) => set({ env: update(d.env, kv.id, { key: e.target.value }) })} />
+                <input className="input mono" type={isSecret(kv.key) ? 'password' : 'text'} value={kv.value} placeholder="value"
+                  spellCheck={false} onChange={(e) => set({ env: update(d.env, kv.id, { value: e.target.value }) })} />
+                <RowRemove onClick={() => set({ env: d.env.filter((x) => x.id !== kv.id) })} />
+              </div>
+            ))}
+            <AddButton label="Add variable" onClick={() => set({ env: [...d.env, { id: uid(), key: '', value: '' }] })} />
+          </div>
+        </Field>
+      </Section>
+
+      <Section icon={Cpu} tint="var(--orange)" title="Sandbox">
+        <Meter icon={Cpu} label="CPU" value={d.cpu} min={0.25} max={8} step={0.25} display={cpuString(d.cpu)}
+          ticks={['250m', '2', '4', '6', '8']} onChange={(cpu) => set({ cpu })} />
+        <Meter icon={MemoryStick} label="Memory" value={d.memoryMi} min={256} max={16384} step={256} display={memoryString(d.memoryMi)}
+          ticks={['256Mi', '4Gi', '8Gi', '12Gi', '16Gi']} onChange={(memoryMi) => set({ memoryMi })} />
+        <div className="ds-toggle-row">
+          <div className="col">
+            <span>Debug</span>
+            <span className="caption faint">Serves guest services so <code>ax ssh</code> works</span>
+          </div>
+          <Toggle checked={d.debug} onChange={(debug) => set({ debug })} />
+        </div>
+      </Section>
+
+      <Section icon={Sparkles} tint="#d4721f" title="Runner config"
+        trailing={<Segmented<ConfigMode> value={d.configMode} onChange={(configMode) => set({ configMode })}
+          options={[{ value: 'none', label: 'None' }, { value: 'claudeCode', label: 'Claude Code' }, { value: 'custom', label: 'Custom YAML' }]} />}>
+        {d.configMode === 'none' && <p className="muted ds-hint">The runner image runs its command with no extra config.</p>}
+        {d.configMode === 'claudeCode' && (
+          <>
+            <Field label="Prompt">
+              <textarea className="textarea" rows={5} value={d.prompt} placeholder="What should Claude do?"
+                onChange={(e) => set({ prompt: e.target.value })} />
+            </Field>
+            <Field label="Model">
+              <input className="input mono" value={d.ccModel} onChange={(e) => set({ ccModel: e.target.value })} />
+            </Field>
+            <Field label="Max turns">
+              <input className="input" type="number" min={1} style={{ width: 100 }} value={d.maxTurns}
+                onChange={(e) => set({ maxTurns: Math.max(1, +e.target.value || 1) })} />
+            </Field>
+            <div className="ds-toggle-row">
+              <div className="col">
+                <span>Skip permission prompts</span>
+                <span className="caption faint">Sets dangerouslySkipPermissions; the sandbox is the boundary</span>
+              </div>
+              <Toggle checked={d.skipPermissions} onChange={(skipPermissions) => set({ skipPermissions })} />
+            </div>
+            <div className="ds-note caption">
+              <TriangleAlert size={13} />
+              <span><code>spec.config</code> needs a Claude Code runner image and an ax build with spec.config support; older builds reject it as an unknown field.</span>
+            </div>
+          </>
+        )}
+        {d.configMode === 'custom' && (
+          <textarea className="textarea mono" rows={6} spellCheck={false} value={d.customConfig}
+            onChange={(e) => set({ customConfig: e.target.value })} />
+        )}
+      </Section>
+
+      <Section icon={FolderGit2} tint="var(--purple)" title="Workspace"
+        trailing={<Segmented<WorkspaceMode> value={d.workspaceMode} onChange={(workspaceMode) => set({ workspaceMode })}
+          options={[{ value: 'none', label: 'None' }, { value: 'existing', label: 'Existing' }, { value: 'new', label: 'New' }]} />}>
+        {d.workspaceMode === 'none' && <p className="muted ds-hint">The task gets an empty <code>/workspace</code>.</p>}
+        {d.workspaceMode === 'existing' && (
+          <Field label="Workspace">
+            <select className="select" value={d.existingWorkspace} onChange={(e) => set({ existingWorkspace: e.target.value })}>
+              <option value="">Choose…</option>
+              {s.workspaces.map((w) => (
+                <option key={w.id} value={w.name}>{w.name} ({w.gitCount} repo{w.gitCount === 1 ? '' : 's'}, {w.mcpCount} MCP)</option>
+              ))}
+            </select>
+          </Field>
+        )}
+        {d.workspaceMode === 'new' && <NewWorkspace d={d} />}
+      </Section>
+
+      <Section icon={Cpu} tint="var(--teal)" title="Model"
+        trailing={<Toggle checked={d.includeModel} onChange={(includeModel) => set({ includeModel })} title="Include a Model resource" />}>
+        {!d.includeModel && <p className="muted ds-hint">Optionally create a Model resource alongside the task.</p>}
+        {d.includeModel && (
+          <>
+            <Field label="Name" error={validateLabel(d.modelName)}>
+              <input className="input" value={d.modelName} onChange={(e) => set({ modelName: e.target.value })} />
+            </Field>
+            <Field label="Provider">
+              <input className="input" value={d.provider} onChange={(e) => set({ provider: e.target.value })} />
+            </Field>
+            <Field label="Model ID">
+              <input className="input mono" value={d.modelID} onChange={(e) => set({ modelID: e.target.value })} />
+            </Field>
+            <Field label="Secret">
+              <div className="ds-row">
+                <input className="input mono" value={d.secretName} placeholder="secret name" onChange={(e) => set({ secretName: e.target.value })} />
+                <input className="input mono" value={d.secretKey} placeholder="key" onChange={(e) => set({ secretKey: e.target.value })} />
+              </div>
+            </Field>
+            <Field label="Max tokens">
+              <input className="input" type="number" min={0} style={{ width: 120 }} value={d.maxTokens}
+                onChange={(e) => set({ maxTokens: Math.max(0, +e.target.value || 0) })} />
+            </Field>
+          </>
+        )}
+      </Section>
+    </div>
+  )
+}
+
+function NewWorkspace({ d }: { d: Draft }) {
+  return (
+    <>
+      <Field label="Name" error={validateLabel(d.wsName)}>
+        <input className="input" value={d.wsName} onChange={(e) => set({ wsName: e.target.value })} />
+      </Field>
+      <Field label="Git repos">
+        <div className="col" style={{ gap: 6 }}>
+          {d.repos.map((r) => (
+            <div key={r.id} className="ds-row">
+              <input className="input" style={{ flex: '0 0 22%' }} value={r.name} placeholder="name"
+                onChange={(e) => set({ repos: update(d.repos, r.id, { name: e.target.value }) })} />
+              <input className={`input mono ${r.repo ? '' : 'invalid'}`} value={r.repo} placeholder="https://github.com/org/repo.git"
+                spellCheck={false} onChange={(e) => set({ repos: update(d.repos, r.id, { repo: e.target.value }) })} />
+              <input className="input mono" style={{ flex: '0 0 18%' }} value={r.branch} placeholder="branch"
+                onChange={(e) => set({ repos: update(d.repos, r.id, { branch: e.target.value }) })} />
+              <RowRemove onClick={() => set({ repos: d.repos.filter((x) => x.id !== r.id) })} />
+            </div>
+          ))}
+          <AddButton label="Add repo" onClick={() => set({ repos: [...d.repos, { id: uid(), name: d.repos.length ? `repo${d.repos.length + 1}` : 'origin', repo: '', branch: 'main' }] })} />
+        </div>
+      </Field>
+      <Field label="Files">
+        <div className="col" style={{ gap: 8 }}>
+          {d.files.map((f) => (
+            <div key={f.id} className="ds-file">
+              <div className="ds-row">
+                <input className="input mono" value={f.path} placeholder="path"
+                  onChange={(e) => set({ files: update(d.files, f.id, { path: e.target.value }) })} />
+                <RowRemove onClick={() => set({ files: d.files.filter((x) => x.id !== f.id) })} />
+              </div>
+              <textarea className="textarea mono" rows={3} value={f.content} placeholder="file contents" spellCheck={false}
+                onChange={(e) => set({ files: update(d.files, f.id, { content: e.target.value }) })} />
+            </div>
+          ))}
+          <AddButton label="Add file" onClick={() => set({ files: [...d.files, { id: uid(), path: d.files.length ? '' : 'AGENTS.md', content: '' }] })} />
+        </div>
+      </Field>
+      <Field label="MCP servers">
+        <div className="col" style={{ gap: 6 }}>
+          {d.servers.map((sv) => (
+            <div key={sv.id} className="ds-row">
+              <input className="input" style={{ flex: '0 0 28%' }} value={sv.name} placeholder="name"
+                onChange={(e) => set({ servers: update(d.servers, sv.id, { name: e.target.value }) })} />
+              <input className="input mono" value={sv.endpoint} placeholder="https://host/mcp" spellCheck={false}
+                onChange={(e) => set({ servers: update(d.servers, sv.id, { endpoint: e.target.value }) })} />
+              <RowRemove onClick={() => set({ servers: d.servers.filter((x) => x.id !== sv.id) })} />
+            </div>
+          ))}
+          <AddButton label="Add server" onClick={() => set({ servers: [...d.servers, { id: uid(), name: '', endpoint: '' }] })} />
+        </div>
+      </Field>
+    </>
+  )
+}
+
+// MARK: YAML
+
+function YamlPane({ d }: { d: Draft }) {
+  const [copied, setCopied] = useState(false)
+  const text = generate(d, true)
+  const docs = text.split(/^---\s*$/m).filter((x) => x.trim()).length
+  const copy = async () => {
+    await navigator.clipboard.writeText(generate(d))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1400)
+  }
+  return (
+    <div className="yaml-pane">
+      <div className="yaml-head">
+        <FileCode2 size={14} className="faint" />
+        <strong>{d.rawMode ? 'Manifest' : 'Generated YAML'}</strong>
+        <span className="chip">{docs} doc{docs === 1 ? '' : 's'}</span>
+        {d.filePath && <span className="caption faint ellipsis" title={d.filePath}>{d.filePath.split(/[\\/]/).pop()}</span>}
+        <span className="spacer" />
+        <label className="row caption muted" style={{ gap: 6 }}>
+          Edit raw
+          <Toggle checked={d.rawMode} onChange={(on) => (on ? designer.enterRawMode() : set({ rawMode: false }))} />
+        </label>
+        <button className="btn small" onClick={() => void copy()} title="Copy the manifest (with secrets)">
+          {copied ? <Check size={13} /> : <Copy size={13} />}{copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      {d.rawMode ? (
+        <textarea className="yaml-raw mono" spellCheck={false} value={d.rawYAML} onChange={(e) => set({ rawYAML: e.target.value })} />
+      ) : (
+        <YamlView text={text} />
+      )}
+    </div>
+  )
+}
+
+// MARK: Footer
+
+function Footer({ d, result }: { d: Draft; result: ApplyResult }) {
+  const list = issues(d)
+  return (
+    <footer className="designer-foot">
+      <div className="foot-issues">
+        {list.length === 0 ? (
+          <span className="row foot-ok"><CircleCheck size={14} />{d.rawMode ? 'Raw manifest — validated by the server on apply' : 'Ready to apply'}</span>
+        ) : (
+          list.map((i, n) => (
+            <span key={n} className={`row foot-issue ${i.severity}`}>
+              {i.severity === 'error' ? <CircleX size={13} /> : <TriangleAlert size={13} />}
+              {i.text}
+            </span>
+          ))
+        )}
+      </div>
+      {result && (
+        <div className={`foot-result fade-in ${result.ok ? 'ok' : 'err'}`} title={result.text}>
+          {result.ok ? <CircleCheck size={14} /> : <CircleX size={14} />}
+          <span className="ellipsis selectable">{result.text || (result.ok ? 'Applied' : 'Failed')}</span>
+        </div>
+      )}
+    </footer>
+  )
+}

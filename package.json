@@ -1,0 +1,35 @@
+{
+  "name": "ax-studio",
+  "productName": "AX Studio",
+  "version": "0.1.0",
+  "description": "Deploy, design and visualize AX tasks",
+  "main": "out/main/index.js",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "start": "electron-vite preview",
+    "dist": "electron-vite build && electron-builder",
+    "dist:mac": "electron-vite build && electron-builder --mac",
+    "dist:win": "electron-vite build && electron-builder --win",
+    "dist:linux": "electron-vite build && electron-builder --linux"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.9",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "electron": "^37.2.0",
+    "electron-builder": "^26.17.0",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  },
+  "dependencies": {
+    "lucide-react": "^0.525.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "yaml": "^2.8.0"
+  }
+}

@@ -1,0 +1,31 @@
+.topology { height: 100%; display: flex; flex-direction: column; }
+.topology-head { padding: 24px 28px 0; flex: none; }
+.topology-head .page-header { margin-bottom: 12px; }
+.topo-legend { gap: 12px; }
+
+.topo-scroll { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid var(--border); }
+.topo-sizer { position: relative; margin: 8px 0 24px 8px; }
+.topo-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+
+.topo-col-title {
+  position: absolute; top: 4px; text-align: center;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: var(--text-3);
+}
+
+.topo-edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.topo-edge { transition: opacity .18s ease; }
+.topo-edge path { transition: stroke-width .18s ease; }
+
+.topo-node {
+  position: absolute; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 10px;
+  transition: opacity .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.topo-node.hovered { box-shadow: 0 0 0 3px color-mix(in srgb, var(--tint) 18%, transparent), var(--shadow-lift); transform: translateY(-1px); }
+.topo-node.clickable { cursor: pointer; }
+.topo-icon {
+  width: 32px; height: 32px; border-radius: 8px; flex: none; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--tint) 14%, transparent);
+}
+.topo-text { min-width: 0; flex: 1; gap: 1px; }
+.topo-title { font-weight: 600; font-size: 13px; }
+.topo-sub { font-size: 11px; color: var(--text-2); }

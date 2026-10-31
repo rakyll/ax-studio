@@ -1,0 +1,221 @@
+import { useEffect, useRef, useState } from 'react'
+import { Columns3, Gauge, Laptop, Network, Package, RefreshCw, Server, Settings as SettingsIcon, SquarePen, ChevronDown, Check, type LucideIcon } from 'lucide-react'
+import { store, useStore, type Section } from './model/store'
+import logo from './assets/axel.svg'
+import { designer } from './model/designer'
+import { type AXContext, shortName } from './model/resources'
+import { PulseDot } from './components'
+import { Overview } from './views/Overview'
+import { Board } from './views/Board'
+import { Topology } from './views/Topology'
+import { Designer } from './views/Designer'
+import { Deploy } from './views/Deploy'
+import './styles/app.css'
+
+const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Workspace' | 'Build' }[] = [
+  { id: 'overview', title: 'Overview', icon: Gauge, group: 'Workspace' },
+  { id: 'board', title: 'Task Board', icon: Columns3, group: 'Workspace' },
+  { id: 'topology', title: 'Topology', icon: Network, group: 'Workspace' },
+  { id: 'designer', title: 'Designer', icon: SquarePen, group: 'Build' },
+  { id: 'deploy', title: 'Deploy', icon: Package, group: 'Build' },
+]
+
+export function App() {
+  const s = useStore()
+
+  useEffect(() => {
+    void store.start()
+    return window.studio.onMenu((action) => {
+      if (action.startsWith('section:')) store.setSection(action.slice(8) as Section)
+      else if (action === 'refresh') void store.refresh()
+      else if (action === 'settings') store.set({ settingsOpen: true })
+      else if (action === 'new-design') { designer.load('blank'); store.setSection('designer') }
+      else if (action === 'open-manifest') { void designer.open(store.state.settings.repoPath); store.setSection('designer') }
+      else if (action === 'save-manifest') void designer.save()
+      else if (action === 'apply') window.dispatchEvent(new Event('ax:apply'))
+    })
+  }, [])
+
+  return (
+    <div className="shell">
+      <aside className="sidebar">
+        <div className="titlebar-drag sidebar-top" />
+        <nav>
+          {(['Workspace', 'Build'] as const).map((g) => (
+            <div key={g} className="nav-group">
+              <div className="nav-heading">{g}</div>
+              {SECTIONS.filter((x) => x.group === g).map((x) => (
+                <button key={x.id} className={`nav-item ${s.section === x.id ? 'on' : ''}`} onClick={() => store.setSection(x.id)}>
+                  <x.icon size={15} />
+                  <span>{x.title}</span>
+                  {x.id === 'board' && s.tasks.length > 0 && <span className="nav-count">{s.tasks.length}</span>}
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <div className="spacer" />
+        <ConnectionBadge />
+      </aside>
+      <main className="main">
+        <Toolbar />
+        <div className="content" key={s.section}>
+          {s.section === 'overview' && <Overview />}
+          {s.section === 'board' && <Board />}
+          {s.section === 'topology' && <Topology />}
+          {s.section === 'designer' && <Designer />}
+          {s.section === 'deploy' && <Deploy />}
+        </div>
+      </main>
+      {s.settingsOpen && <SettingsModal />}
+    </div>
+  )
+}
+
+const contextIcon = (c?: AXContext) => (c?.name === 'local' ? Laptop : Server)
+
+function Toolbar() {
+  const s = useStore()
+  const current = store.currentContext
+  const Icon = contextIcon(current)
+  const [atespace, setAtespace] = useState(s.atespace)
+  useEffect(() => setAtespace(s.atespace), [s.atespace])
+
+  return (
+    <header className="toolbar titlebar-drag">
+      <div className="toolbar-title"><img src={logo} alt="" className="toolbar-logo" />AX Studio</div>
+      <div className="spacer" />
+      <div className="no-drag row">
+        <Dropdown
+          label={<><Icon size={14} />{current ? shortName(current.name) : 'Context'}</>}
+          title="Where ax sends commands. Switching here does not change your global ax config."
+        >
+          {(close) => (
+            <>
+              {s.contexts.map((c) => {
+                const CI = contextIcon(c)
+                return (
+                  <button key={c.name} className="menu-item" onClick={() => { store.setScope({ context: c.name }); close() }}>
+                    <span className="menu-check">{c.name === s.context && <Check size={13} />}</span>
+                    <CI size={13} />
+                    <span className="col">
+                      <span>{shortName(c.name)}{c.isCurrent && <span className="faint"> · default</span>}</span>
+                      {c.description && <span className="caption faint">{c.description}</span>}
+                    </span>
+                  </button>
+                )
+              })}
+              <div className="menu-sep" />
+              <button className="menu-item" disabled={current?.isCurrent ?? true}
+                onClick={() => { void store.makeDefault(s.context); close() }}>
+                <span className="menu-check" />Make Default for ax CLI
+              </button>
+            </>
+          )}
+        </Dropdown>
+        <input
+          className="input"
+          style={{ width: 110 }}
+          value={atespace}
+          title="Atespace scope"
+          placeholder="atespace"
+          onChange={(e) => setAtespace(e.target.value)}
+          onBlur={() => atespace !== s.atespace && store.setScope({ atespace: atespace || 'default' })}
+          onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+        />
+        <button className="btn icon" title="Refresh (⌘R)" onClick={() => void store.refresh()}>
+          <RefreshCw size={14} className={s.isRefreshing ? 'spin' : ''} />
+        </button>
+        <button className="btn icon" title="Settings" onClick={() => store.set({ settingsOpen: true })}>
+          <SettingsIcon size={14} />
+        </button>
+      </div>
+    </header>
+  )
+}
+
+export function Dropdown({ label, title, children }: {
+  label: React.ReactNode
+  title?: string
+  children: (close: () => void) => React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false) }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => { window.removeEventListener('mousedown', onDown); window.removeEventListener('keydown', onKey) }
+  }, [open])
+  return (
+    <div className="dropdown" ref={ref}>
+      <button className="btn" title={title} onClick={() => setOpen(!open)}>
+        {label}
+        <ChevronDown size={12} className="faint" />
+      </button>
+      {open && <div className="menu card fade-in">{children(() => setOpen(false))}</div>}
+    </div>
+  )
+}
+
+function ConnectionBadge() {
+  const s = useStore()
+  const color = s.connectionError ? 'var(--red)' : s.lastRefresh ? 'var(--green)' : 'var(--orange)'
+  const status = s.connectionError ?? (s.lastRefresh ? `updated ${new Date(s.lastRefresh).toLocaleTimeString()}` : 'connecting…')
+  return (
+    <div className="conn" title={s.connectionError ?? s.axVersion ?? 'Connected'}>
+      <PulseDot color={color} on={!s.connectionError && !!s.lastRefresh} />
+      <div className="col" style={{ minWidth: 0 }}>
+        <strong className="ellipsis">{s.context ? shortName(s.context) : 'connecting…'}</strong>
+        <span className="caption muted clamp2">{status}</span>
+      </div>
+    </div>
+  )
+}
+
+function SettingsModal() {
+  const s = useStore()
+  const [axPath, setAxPath] = useState(s.settings.axPath)
+  const [repoPath, setRepoPath] = useState(s.settings.repoPath)
+  const [interval, setIntervalValue] = useState(s.settings.refreshInterval)
+  const [resolved, setResolved] = useState<string | null | undefined>(undefined)
+  useEffect(() => {
+    const t = setTimeout(() => void window.studio.which(axPath).then(setResolved), 200)
+    return () => clearTimeout(t)
+  }, [axPath])
+  const close = () => store.set({ settingsOpen: false })
+  const save = () => {
+    const axChanged = axPath !== s.settings.axPath
+    store.updateSettings({ axPath, repoPath, refreshInterval: interval })
+    close()
+    if (axChanged) void store.loadContexts().then(() => store.refresh())
+  }
+  return (
+    <div className="modal-backdrop" onMouseDown={close}>
+      <div className="modal card fade-in" onMouseDown={(e) => e.stopPropagation()}>
+        <h3>Settings</h3>
+        <div className="form-grid">
+          <label>ax binary</label>
+          <div className="col" style={{ gap: 4 }}>
+            <input className="input mono" value={axPath} onChange={(e) => setAxPath(e.target.value)} />
+            <span className="caption faint mono">{resolved === undefined ? '…' : resolved ?? 'not found on PATH'}</span>
+          </div>
+          <label>AX repository</label>
+          <input className="input mono" value={repoPath} onChange={(e) => setRepoPath(e.target.value)} />
+          <label>Refresh</label>
+          <div className="row">
+            <input type="range" min={2} max={30} step={1} value={interval} onChange={(e) => setIntervalValue(+e.target.value)} style={{ flex: 1 }} />
+            <span className="mono" style={{ width: 32, textAlign: 'right' }}>{interval}s</span>
+          </div>
+        </div>
+        <div className="row" style={{ marginTop: 18, justifyContent: 'flex-end' }}>
+          <span className="caption faint" style={{ marginRight: 'auto' }}>{s.axVersion?.split('\n')[0]}</span>
+          <button className="btn" onClick={close}>Cancel</button>
+          <button className="btn primary" onClick={save}>Save</button>
+        </div>
+      </div>
+    </div>
+  )
+}
