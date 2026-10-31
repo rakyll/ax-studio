@@ -8,6 +8,10 @@ import type { RunRequest, StreamRequest } from '../shared/api'
 const isMac = process.platform === 'darwin'
 let win: BrowserWindow | null = null
 
+const arg = (name: string) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
+// `--screenshot=out.png` renders off-screen, saves the page and quits; it never takes focus.
+const screenshot = arg('screenshot')
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1440,
@@ -16,9 +20,9 @@ function createWindow() {
     minHeight: 700,
     title: 'AX Studio',
     show: false,
-    backgroundColor: '#00000000',
+    backgroundColor: screenshot ? '#f5f5f4' : '#00000000',
     // Native traffic lights inset into our own title bar on macOS; standard frame elsewhere.
-    ...(isMac ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 18, y: 18 }, vibrancy: 'sidebar' } : {}),
+    ...(isMac && !screenshot ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 18, y: 18 }, vibrancy: 'sidebar' } : {}),
     icon: join(__dirname, '../../build-resources/icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -27,17 +31,28 @@ function createWindow() {
       sandbox: true,
     },
   })
-  win.once('ready-to-show', () => win?.show())
+  if (screenshot) win.webContents.once('did-finish-load', () => setTimeout(() => void capture(screenshot), Number(arg('delay') ?? 6000)))
+  else win.once('ready-to-show', () => win?.show())
   // Links open in the browser, never inside the app.
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
     return { action: 'deny' }
   })
-  // `--section=board` opens a specific page (handy for scripted screenshots).
-  const section = process.argv.find((a) => a.startsWith('--section='))?.slice(10)
-  const query: Record<string, string> = section ? { section } : {}
-  if (process.env.ELECTRON_RENDERER_URL) win.loadURL(process.env.ELECTRON_RENDERER_URL + (section ? `?section=${section}` : ''))
+  // `--section=board` opens a specific page; `--cluster=name` expands a cluster card.
+  const query: Record<string, string> = {}
+  for (const k of ['section', 'cluster']) {
+    const v = arg(k)
+    if (v) query[k] = v
+  }
+  const search = new URLSearchParams(query).toString()
+  if (process.env.ELECTRON_RENDERER_URL) win.loadURL(process.env.ELECTRON_RENDERER_URL + (search ? `?${search}` : ''))
   else win.loadFile(join(__dirname, '../renderer/index.html'), { query })
+}
+
+async function capture(file: string) {
+  const image = await win!.webContents.capturePage()
+  writeFileSync(expand(file), image.toPNG())
+  app.quit()
 }
 
 function send(action: string) {

@@ -2,8 +2,8 @@ import { useSyncExternalStore } from 'react'
 import { validateImage, validateLabel } from './resources'
 
 export type WorkspaceMode = 'none' | 'existing' | 'new'
-export type ConfigMode = 'none' | 'claudeCode' | 'custom'
-export type Template = 'blank' | 'simple' | 'claudeCode' | 'team'
+export type ConfigMode = 'none' | 'custom'
+export type Template = 'blank' | 'simple' | 'team'
 
 export interface KeyValue { id: number; key: string; value: string }
 export interface RepoDraft { id: number; name: string; repo: string; branch: string }
@@ -22,10 +22,6 @@ export interface Draft {
   debug: boolean
   // Runner config
   configMode: ConfigMode
-  prompt: string
-  ccModel: string
-  maxTurns: number
-  skipPermissions: boolean
   customConfig: string
   // Workspace
   workspaceMode: WorkspaceMode
@@ -54,7 +50,6 @@ export const uid = () => nextID++
 export const TEMPLATES: { id: Template; title: string; detail: string }[] = [
   { id: 'blank', title: 'Blank', detail: 'An empty task on the default runner image' },
   { id: 'simple', title: 'Simple task', detail: 'A command with an env var, no workspace' },
-  { id: 'claudeCode', title: 'Claude Code on a repo', detail: 'Clone a repo and let Claude fix its tests' },
   { id: 'team', title: 'Team workspace', detail: 'Two repos and MCP servers feeding one task' },
 ]
 
@@ -63,7 +58,7 @@ const RUNNER = 'gcr.io/ax-substrate/ate-images/ax-task-runner@sha256:3a0dea6ad8b
 function blank(): Draft {
   return {
     name: 'my-task', atespace: '', image: '', command: '', env: [], cpu: 1, memoryMi: 512, debug: true,
-    configMode: 'none', prompt: '', ccModel: 'claude-opus-5-5', maxTurns: 50, skipPermissions: true, customConfig: 'key: value\n',
+    configMode: 'none', customConfig: 'key: value\n',
     workspaceMode: 'none', existingWorkspace: '', wsName: 'my-workspace', repos: [], files: [], servers: [],
     includeModel: false, modelName: 'default-model', provider: 'anthropic', modelID: 'claude-opus-5-5',
     secretName: 'anthropic-api-secret', secretKey: 'ANTHROPIC_API_KEY', maxTokens: 16000,
@@ -78,22 +73,6 @@ export function template(t: Template): Draft {
       return d
     case 'simple':
       return { ...d, name: 'simple-task', image: RUNNER, command: "sh -c 'echo $ENVIRONMENT'", env: [{ id: uid(), key: 'ENVIRONMENT', value: 'test' }] }
-    case 'claudeCode':
-      return {
-        ...d,
-        name: 'claude-code',
-        image: 'gcr.io/ax-images/ax-images@sha256:REPLACE_WITH_PUSHED_DIGEST',
-        cpu: 2,
-        memoryMi: 4096,
-        configMode: 'claudeCode',
-        prompt:
-          'Read the repository, install it with its test dependencies, and run the\ntest suite. Fix any failing or flaky tests you find. Finish by writing a\nshort markdown report to /workspace/claude-output.md.',
-        env: [{ id: uid(), key: 'ANTHROPIC_API_KEY', value: '' }],
-        workspaceMode: 'new',
-        wsName: 'itsdangerous',
-        repos: [{ id: uid(), name: 'origin', repo: 'https://github.com/pallets/itsdangerous.git', branch: 'main' }],
-        files: [{ id: uid(), path: 'CLAUDE.md', content: '# Working in this repo\n- Install with `pip install -e . pytest`, test with `pytest`.\n- Do not push or open pull requests.\n' }],
-      }
     case 'team':
       return {
         ...d,
@@ -141,7 +120,6 @@ export function issues(d: Draft): Issue[] {
   if (d.includeModel && (e = validateLabel(d.modelName))) err(`Model name: ${e}`)
   if (d.env.some((kv) => !kv.key)) warn('An env var has no name')
   if (d.env.some((kv) => isSecret(kv.key) && !kv.value)) warn('A credential env var is empty')
-  if (d.configMode === 'claudeCode' && !d.prompt.trim()) err('Claude Code needs a prompt')
   return out
 }
 
@@ -229,10 +207,7 @@ export function generate(d: Draft, redact = false): string {
   if (d.image) t += `\n  image: ${q(d.image)}`
   const argv = tokenize(d.command)
   if (argv.length) t += `\n  command: [${argv.map(q).join(', ')}]`
-  if (d.configMode === 'claudeCode') {
-    t += `\n  config:\n    prompt: ${block(d.prompt, 6)}\n    model: ${q(d.ccModel)}\n    maxTurns: ${d.maxTurns}`
-    if (d.skipPermissions) t += '\n    dangerouslySkipPermissions: true'
-  } else if (d.configMode === 'custom') {
+  if (d.configMode === 'custom') {
     t += '\n  config:\n' + d.customConfig.split('\n').map((l) => '    ' + l).join('\n').trimEnd()
   }
   const env = d.env.filter((kv) => kv.key)

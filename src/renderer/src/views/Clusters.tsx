@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import {
-  Boxes, Circle, CircleCheck, CircleDashed, CircleX, Cpu, ExternalLink, Layers3, Loader, Play, Plus, RefreshCw, Server,
+  Boxes, Check, Circle, CircleCheck, Copy, CircleDashed, CircleX, Cpu, ExternalLink, Layers3, Loader, Play, Plus, RefreshCw, Server,
   Square, Trash2, TriangleAlert, Wrench, type LucideIcon,
 } from 'lucide-react'
 import { clusters, useClusters, STAGES, type Cluster, type Operation, type Replicas } from '../model/clusters'
@@ -25,6 +25,7 @@ export function Clusters() {
   useEffect(() => void clusters.init(), [])
   const running = c.op?.status === 'running'
   const problems = clusters.problems
+  const [selected, setSelected] = useState<string | null>(new URLSearchParams(location.search).get('cluster'))
 
   return (
     <div className="deploy">
@@ -42,7 +43,10 @@ export function Clusters() {
 
         <div className="clusters-layout">
           <div className="cluster-grid">
-            {c.clusters.map((cl) => <ClusterCard key={cl.name} cluster={cl} />)}
+            {c.clusters.map((cl) => (
+              <ClusterCard key={cl.name} cluster={cl} selected={selected === cl.name}
+                onSelect={() => setSelected(selected === cl.name ? null : cl.name)} />
+            ))}
             {c.loaded && c.clusters.length === 0 && problems.length === 0 && (
               <div className="card cluster-empty">
                 <Empty icon={Boxes} title="No kind clusters yet">Create one on the right; it takes about ten minutes the first time.</Empty>
@@ -87,7 +91,7 @@ function layers(c: Cluster): { id: string; icon: LucideIcon; title: string; deta
   ]
 }
 
-function ClusterCard({ cluster: cl }: { cluster: Cluster }) {
+function ClusterCard({ cluster: cl, selected, onSelect }: { cluster: Cluster; selected: boolean; onSelect: () => void }) {
   const c = useClusters()
   const s = useStore()
   const busy = c.op?.status === 'running'
@@ -111,7 +115,8 @@ function ClusterCard({ cluster: cl }: { cluster: Cluster }) {
   }
 
   return (
-    <div className={`card cluster-card ${mine ? 'busy' : ''} ${current ? 'highlight' : ''}`}>
+    <div className={`card cluster-card ${mine ? 'busy' : ''} ${current || selected ? 'highlight' : ''}`} onClick={onSelect}
+      title={selected ? undefined : 'Show how to use this cluster with kubectl'}>
       <div className="row cluster-head">
         <div className="cluster-icon"><Boxes size={16} /></div>
         <div className="cluster-name">
@@ -138,7 +143,9 @@ function ClusterCard({ cluster: cl }: { cluster: Cluster }) {
         })}
       </div>
 
-      <div className="row cluster-actions">
+      {selected && <ConnectCommands cluster={cl} />}
+
+      <div className="row cluster-actions" onClick={(e) => e.stopPropagation()}>
         {axReady && (
           <button className="btn small primary" disabled={busy || current} onClick={() => void clusters.open(cl)}
             title={cl.inKubeconfig ? `Switch AX Studio to ${cl.context}` : `Add ${cl.context} to your kubeconfig and switch AX Studio to it`}>
@@ -157,6 +164,43 @@ function ClusterCard({ cluster: cl }: { cluster: Cluster }) {
         </button>
       </div>
       {mine && <div className="step-progress" />}
+    </div>
+  )
+}
+
+/** Shell commands for using the cluster from a terminal. */
+function ConnectCommands({ cluster: cl }: { cluster: Cluster }) {
+  const c = useClusters()
+  const provider = c.runtime?.runtime === 'podman' ? 'KIND_EXPERIMENTAL_PROVIDER=podman ' : ''
+  const commands = [
+    ...(cl.inKubeconfig ? [] : [{ note: 'Add the context to your kubeconfig (this also switches to it)', cmd: `${provider}kind export kubeconfig --name ${cl.name}` }]),
+    { note: 'Switch kubectl to this cluster', cmd: `kubectl config use-context ${cl.context}` },
+    { note: 'Or target it per command', cmd: `kubectl --context ${cl.context} get pods -A` },
+    ...(cl.ax ? [{ note: 'Use it with ax', cmd: `ax --context ${cl.context} get tasks` }] : []),
+  ]
+  return (
+    <div className="connect" onClick={(e) => e.stopPropagation()}>
+      {commands.map((x) => <CommandLine key={x.cmd} note={x.note} cmd={x.cmd} />)}
+    </div>
+  )
+}
+
+function CommandLine({ note, cmd }: { note: string; cmd: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    void navigator.clipboard.writeText(cmd)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1200)
+  }
+  return (
+    <div className="connect-item">
+      <div className="connect-note">{note}</div>
+      <div className="row connect-cmd">
+        <code className="selectable">{cmd}</code>
+        <button className="btn small icon ghost" onClick={copy} title="Copy">
+          {copied ? <Check size={12} color="var(--green)" /> : <Copy size={12} />}
+        </button>
+      </div>
     </div>
   )
 }

@@ -267,34 +267,8 @@ function DesignerForm({ d }: { d: Draft }) {
 
       <Section icon={Sparkles} tint="#d4721f" title="Runner config"
         trailing={<Segmented<ConfigMode> value={d.configMode} onChange={(configMode) => set({ configMode })}
-          options={[{ value: 'none', label: 'None' }, { value: 'claudeCode', label: 'Claude Code' }, { value: 'custom', label: 'Custom YAML' }]} />}>
+          options={[{ value: 'none', label: 'None' }, { value: 'custom', label: 'Custom YAML' }]} />}>
         {d.configMode === 'none' && <p className="muted ds-hint">The runner image runs its command with no extra config.</p>}
-        {d.configMode === 'claudeCode' && (
-          <>
-            <Field label="Prompt">
-              <textarea className="textarea" rows={5} value={d.prompt} placeholder="What should Claude do?"
-                onChange={(e) => set({ prompt: e.target.value })} />
-            </Field>
-            <Field label="Model">
-              <input className="input mono" value={d.ccModel} onChange={(e) => set({ ccModel: e.target.value })} />
-            </Field>
-            <Field label="Max turns">
-              <input className="input" type="number" min={1} style={{ width: 100 }} value={d.maxTurns}
-                onChange={(e) => set({ maxTurns: Math.max(1, +e.target.value || 1) })} />
-            </Field>
-            <div className="ds-toggle-row">
-              <div className="col">
-                <span>Skip permission prompts</span>
-                <span className="caption faint">Sets dangerouslySkipPermissions; the sandbox is the boundary</span>
-              </div>
-              <Toggle checked={d.skipPermissions} onChange={(skipPermissions) => set({ skipPermissions })} />
-            </div>
-            <div className="ds-note caption">
-              <TriangleAlert size={13} />
-              <span><code>spec.config</code> needs a Claude Code runner image and an ax build with spec.config support; older builds reject it as an unknown field.</span>
-            </div>
-          </>
-        )}
         {d.configMode === 'custom' && (
           <textarea className="textarea mono" rows={6} spellCheck={false} value={d.customConfig}
             onChange={(e) => set({ customConfig: e.target.value })} />

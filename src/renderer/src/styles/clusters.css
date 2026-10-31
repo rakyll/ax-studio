@@ -52,3 +52,13 @@
 .op-stage.running svg { color: var(--accent); }
 .op-stage.failed { color: var(--text); border-bottom-color: var(--red); }
 .op-stage.failed svg { color: var(--red); }
+
+.cluster-card { cursor: default; }
+.connect { display: flex; flex-direction: column; gap: 8px; padding-top: 2px; animation: fadein .2s ease-out; }
+.connect-note { font-size: 11.5px; color: var(--text-2); margin-bottom: 3px; }
+.connect-cmd {
+  gap: 4px; padding: 4px 4px 4px 10px; border-radius: 6px; background: var(--console); color: var(--console-text);
+}
+.connect-cmd code { flex: 1; min-width: 0; font-family: var(--mono); font-size: 11.5px; white-space: nowrap; overflow-x: auto; }
+.connect-cmd .btn.ghost { color: #a9a9ae; }
+.connect-cmd .btn.ghost:hover:not(:disabled) { background: rgba(255,255,255,.08); }

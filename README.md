@@ -4,14 +4,24 @@ A cross-platform desktop app for [AX](../ax): design tasks, watch them run, and
 deploy the control plane to Kubernetes. Built with Electron + React + TypeScript
 and packaged as a native app for macOS, Windows and Linux.
 
+![Overview](docs/screenshots/overview.png)
+
 | Section | What it does |
 |---|---|
 | **Overview** | Stat tiles, phase distribution, tasks-over-time chart, resources, activity feed. |
 | **Task Board** | Kanban by phase. Drag a card to Running/Suspended to resume/suspend; inspector, shell, delete. |
-| **Topology** | Sources → workspaces → tasks → models graph; running edges animate. |
+| **Topology** | Sources → workspaces → tasks graph; running edges animate. |
 | **Designer** | Form + live composition diagram + generated YAML (or raw edit). Templates, open/save, apply. |
 | **Deploy** | Kubernetes pipeline: Agent Substrate → Build & push images → AX → Verify, with a live console. |
-| **Clusters** | Create, inspect and delete local AX clusters on kind: each shows its Kind, Agent Substrate and AX layers. Install or reinstall AX, open a cluster in Studio. |
+| **Clusters** | Create, inspect and delete local AX clusters on kind: each shows its Kind, Agent Substrate and AX layers. Install or reinstall AX, open a cluster in Studio, or click a cluster for its kubectl and ax commands. |
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Task Board](docs/screenshots/board.png) **Task Board** | ![Topology](docs/screenshots/topology.png) **Topology** |
+| ![Designer](docs/screenshots/designer.png) **Designer** | ![Deploy](docs/screenshots/deploy.png) **Deploy** |
+| ![Clusters](docs/screenshots/clusters.png) **Clusters** | |
 
 The app shells out to the `ax` CLI (and `kubectl`, `make`, `go`, `podman`/`docker`
 for deploys). It passes `--context` on every call and gives deploy steps a
@@ -27,7 +37,12 @@ npm run typecheck
 ```
 
 `npx electron . --section=deploy` opens the built app (`npm run build`) on a
-given section.
+given section. To refresh the README screenshots without the window taking
+focus, render off-screen:
+
+```sh
+npx electron . --section=clusters --cluster=ax-dev --delay=7000 --screenshot=docs/screenshots/clusters.png
+```
 
 ## Package
 

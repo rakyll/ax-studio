@@ -78,7 +78,6 @@ export function CompositionDiagram({ d }: { d: Draft }) {
         <div className="cd-chips">
           <span className="chip"><Cpu size={10} />{cpuString(d.cpu)} CPU</span>
           <span className="chip">{memoryString(d.memoryMi)}</span>
-          {d.configMode === 'claudeCode' && <span className="chip">Claude Code</span>}
           {d.debug && <span className="chip">debug</span>}
         </div>
       </Node>
