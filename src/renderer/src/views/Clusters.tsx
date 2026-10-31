@@ -178,7 +178,6 @@ function ConnectCommands({ cluster: cl }: { cluster: Cluster }) {
   const commands = [
     { note: `Import ${cl.context} into your kubeconfig (adds or refreshes it and makes it current)`, cmd: `${provider}kind export kubeconfig --name ${cl.name}` },
     ...(cl.inKubeconfig ? [{ note: 'Already imported: switch kubectl to it', cmd: `kubectl config use-context ${cl.context}` }] : []),
-    { note: 'Or target it per command', cmd: `kubectl --context ${cl.context} get pods -A` },
     ...(cl.ax ? [{ note: 'Use it with ax', cmd: `ax --context ${cl.context} get tasks` }] : []),
   ]
   return (
