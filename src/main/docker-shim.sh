@@ -54,6 +54,18 @@ imagetools_inspect() {
 lastarg() { for a in "$@"; do l=$a; done; printf '%s' "$l"; }
 
 case "$1" in
+  run)
+    shift
+    n=$#
+    while [ "$n" -gt 0 ]; do
+      a=$1; shift; n=$((n - 1))
+      case "$a" in
+        -p|--publish) case "$1" in "[::1]:"*) ;; *) set -- "$@" "$a" "$1" ;; esac; shift; n=$((n - 1)) ;;
+        -p\[::1\]:*|--publish=\[::1\]:*) ;;
+        *) set -- "$@" "$a" ;;
+      esac
+    done
+    exec podman run "$@" ;;
   pull)
     shift
     exec podman pull $(tls "$(lastarg "$@")") "$@" ;;
