@@ -197,7 +197,7 @@ export function Topology() {
                     onClick={() => {
                       if (!task) return
                       store.set({ selectedTaskID: task.id })
-                      store.setSection('board')
+                      store.setSection('overview')
                     }}
                   >
                     <div className="topo-icon"><d.icon size={16} color={d.tint} /></div>

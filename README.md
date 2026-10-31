@@ -8,8 +8,7 @@ and packaged as a native app for macOS, Windows and Linux.
 
 | Section | What it does |
 |---|---|
-| **Overview** | Stat tiles, phase distribution, tasks-over-time chart, resources, activity feed. |
-| **Task Board** | Kanban by phase. Drag a card to Running/Suspended to resume/suspend; inspector, shell, delete. |
+| **Overview** | A one-line digest (task count, phase breakdown, a this-session sparkline, workspaces and models, latest activity) above the task board: kanban by phase. Drag a card to Running/Suspended to resume/suspend; inspector, shell, delete. |
 | **Topology** | Sources → workspaces → tasks graph; running edges animate. |
 | **Designer** | Form + live composition diagram + generated YAML (or raw edit). Templates, open/save, apply. |
 | **Deploy** | Kubernetes pipeline: Agent Substrate → Build & push images → AX → Verify, with a live console. |
@@ -19,9 +18,8 @@ and packaged as a native app for macOS, Windows and Linux.
 
 | | |
 |---|---|
-| ![Task Board](docs/screenshots/board.png) **Task Board** | ![Topology](docs/screenshots/topology.png) **Topology** |
-| ![Designer](docs/screenshots/designer.png) **Designer** | ![Deploy](docs/screenshots/deploy.png) **Deploy** |
-| ![Clusters](docs/screenshots/clusters.png) **Clusters** | |
+| ![Topology](docs/screenshots/topology.png) **Topology** | ![Designer](docs/screenshots/designer.png) **Designer** |
+| ![Deploy](docs/screenshots/deploy.png) **Deploy** | ![Clusters](docs/screenshots/clusters.png) **Clusters** |
 
 The app shells out to the `ax` CLI (and `kubectl`, `make`, `go`, `podman`/`docker`
 for deploys). It passes `--context` on every call and gives deploy steps a

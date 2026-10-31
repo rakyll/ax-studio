@@ -1,11 +1,11 @@
-import { useEffect, useState, type CSSProperties, type DragEvent } from 'react'
+import { useEffect, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
 import {
   Bolt, ChevronRight, CircleCheck, CircleX, Columns3, CornerDownLeft, FolderGit2, Network, Pause, Play,
   Plus, Terminal, Trash2, X, type LucideIcon,
 } from 'lucide-react'
 import { store, useStore, type Result } from '../model/store'
 import { type AXTask, type Condition, type Phase, PHASES, comparePhase, phaseColor, phaseLabel, shortImage } from '../model/resources'
-import { Chip, Empty, PageHeader, PhaseBadge, PhaseIcon, since } from '../components'
+import { Chip, Empty, PhaseBadge, PhaseIcon, since } from '../components'
 import '../styles/board.css'
 
 const ALWAYS: Phase[] = ['pending', 'running', 'suspended', 'failed']
@@ -13,7 +13,12 @@ const DROP_TARGETS: Phase[] = ['running', 'suspended']
 
 type MenuState = { task: AXTask; x: number; y: number } | null
 
-export function Board() {
+/**
+ * The task board: phase columns you drag cards between, plus the inspector
+ * that slides in for the selected task. `before` renders above the columns,
+ * so a page can put its own header there.
+ */
+export function TaskBoard({ before }: { before?: ReactNode }) {
   const s = useStore()
   const [dragging, setDragging] = useState<string | null>(null)
   const [over, setOver] = useState<Phase | null>(null)
@@ -55,11 +60,10 @@ export function Board() {
   return (
     <div className="board-page">
       <div className="board-main">
-        <div className="board-head">
-          <PageHeader
-            title="Task Board"
-            subtitle={s.tasks.length ? 'Drag a card onto Running or Suspended to resume or suspend it.' : undefined}
-          />
+        {before}
+        <div className="row board-head" id="task-board">
+          <h2>Tasks</h2>
+          {s.tasks.length > 0 && <span className="caption faint">Drag a card onto Running or Suspended to resume or suspend it.</span>}
         </div>
         {s.tasks.length === 0 ? (
           <div className="card board-empty">

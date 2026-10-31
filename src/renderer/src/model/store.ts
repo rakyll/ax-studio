@@ -6,7 +6,8 @@ import {
   parseWorkspaceYAML, parseWorkspaces,
 } from './resources'
 
-export type Section = 'overview' | 'board' | 'topology' | 'designer' | 'deploy' | 'clusters'
+export type Section = 'overview' | 'topology' | 'designer' | 'deploy' | 'clusters'
+const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'deploy', 'clusters']
 
 export interface ActivityEntry {
   id: number
@@ -66,7 +67,7 @@ export type Result = ReturnType<typeof result>
 
 class Store {
   state: State = {
-    section: (new URLSearchParams(location.search).get('section') as Section | null) ?? ((localStorage.getItem(SECTION_KEY) as Section) || 'overview'),
+    section: [new URLSearchParams(location.search).get('section'), localStorage.getItem(SECTION_KEY)].find((x): x is Section => SECTIONS.includes(x as Section)) ?? 'overview',
     contexts: [],
     context: '',
     atespace: 'default',

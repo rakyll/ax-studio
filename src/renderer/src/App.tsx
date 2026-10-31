@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Boxes, Columns3, Gauge, Laptop, Network, Package, RefreshCw, Server, Settings as SettingsIcon, SquarePen, ChevronDown, Check, type LucideIcon } from 'lucide-react'
+import { Boxes, Gauge, Laptop, Network, Package, RefreshCw, Server, Settings as SettingsIcon, SquarePen, ChevronDown, Check, type LucideIcon } from 'lucide-react'
 import { store, useStore, type Section } from './model/store'
 import logo from './assets/axel.svg'
 import { designer } from './model/designer'
 import { type AXContext, shortName } from './model/resources'
 import { PulseDot } from './components'
 import { Overview } from './views/Overview'
-import { Board } from './views/Board'
 import { Topology } from './views/Topology'
 import { Designer } from './views/Designer'
 import { Deploy } from './views/Deploy'
@@ -15,7 +14,6 @@ import './styles/app.css'
 
 const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Workspace' | 'Build' }[] = [
   { id: 'overview', title: 'Overview', icon: Gauge, group: 'Workspace' },
-  { id: 'board', title: 'Task Board', icon: Columns3, group: 'Workspace' },
   { id: 'topology', title: 'Topology', icon: Network, group: 'Workspace' },
   { id: 'designer', title: 'Designer', icon: SquarePen, group: 'Build' },
   { id: 'deploy', title: 'Deploy', icon: Package, group: 'Build' },
@@ -50,7 +48,7 @@ export function App() {
                 <button key={x.id} className={`nav-item ${s.section === x.id ? 'on' : ''}`} onClick={() => store.setSection(x.id)}>
                   <x.icon size={15} />
                   <span>{x.title}</span>
-                  {x.id === 'board' && s.tasks.length > 0 && <span className="nav-count">{s.tasks.length}</span>}
+                  {x.id === 'overview' && s.tasks.length > 0 && <span className="nav-count">{s.tasks.length}</span>}
                 </button>
               ))}
             </div>
@@ -63,7 +61,6 @@ export function App() {
         <Toolbar />
         <div className="content" key={s.section}>
           {s.section === 'overview' && <Overview />}
-          {s.section === 'board' && <Board />}
           {s.section === 'topology' && <Topology />}
           {s.section === 'designer' && <Designer />}
           {s.section === 'deploy' && <Deploy />}

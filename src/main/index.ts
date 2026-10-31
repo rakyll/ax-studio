@@ -60,8 +60,8 @@ function send(action: string) {
 }
 
 function buildMenu() {
-  const sections = ['overview', 'board', 'topology', 'designer', 'deploy', 'clusters']
-  const titles = ['Overview', 'Task Board', 'Topology', 'Designer', 'Deploy', 'Clusters']
+  const sections = ['overview', 'topology', 'designer', 'deploy', 'clusters']
+  const titles = ['Overview', 'Topology', 'Designer', 'Deploy', 'Clusters']
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [{ role: 'appMenu' as const }] : []),
     {
