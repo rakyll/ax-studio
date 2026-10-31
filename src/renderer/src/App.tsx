@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Columns3, Gauge, Laptop, Network, Package, RefreshCw, Server, Settings as SettingsIcon, SquarePen, ChevronDown, Check, type LucideIcon } from 'lucide-react'
+import { Boxes, Columns3, Gauge, Laptop, Network, Package, RefreshCw, Server, Settings as SettingsIcon, SquarePen, ChevronDown, Check, type LucideIcon } from 'lucide-react'
 import { store, useStore, type Section } from './model/store'
 import logo from './assets/axel.svg'
 import { designer } from './model/designer'
@@ -10,6 +10,7 @@ import { Board } from './views/Board'
 import { Topology } from './views/Topology'
 import { Designer } from './views/Designer'
 import { Deploy } from './views/Deploy'
+import { Clusters } from './views/Clusters'
 import './styles/app.css'
 
 const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Workspace' | 'Build' }[] = [
@@ -18,6 +19,7 @@ const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Workspac
   { id: 'topology', title: 'Topology', icon: Network, group: 'Workspace' },
   { id: 'designer', title: 'Designer', icon: SquarePen, group: 'Build' },
   { id: 'deploy', title: 'Deploy', icon: Package, group: 'Build' },
+  { id: 'clusters', title: 'Clusters', icon: Boxes, group: 'Build' },
 ]
 
 export function App() {
@@ -65,6 +67,7 @@ export function App() {
           {s.section === 'topology' && <Topology />}
           {s.section === 'designer' && <Designer />}
           {s.section === 'deploy' && <Deploy />}
+          {s.section === 'clusters' && <Clusters />}
         </div>
       </main>
       {s.settingsOpen && <SettingsModal />}

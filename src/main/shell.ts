@@ -1,8 +1,9 @@
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process'
-import { existsSync, writeFileSync, chmodSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
-import type { CommandResult, RunRequest, StreamRequest } from '../shared/api'
+import DOCKER_SHIM from './docker-shim.sh?raw'
+import type { CommandResult, ContainerRuntime, RunRequest, StreamRequest } from '../shared/api'
 
 const isWin = process.platform === 'win32'
 
@@ -79,7 +80,8 @@ const streams = new Map<string, ChildProcess>()
 
 export function stream(req: StreamRequest, onLine: (line: string) => void, onExit: (status: number) => void) {
   const [sh, args] = shellFor(req.commandLine)
-  const child = spawn(sh, args, { cwd: req.cwd, env: { ...env, ...req.env }, windowsHide: true })
+  // Its own process group on unix, so cancel reaches the whole pipeline (make, go, kind…).
+  const child = spawn(sh, args, { cwd: req.cwd, env: { ...env, ...req.env }, windowsHide: true, detached: !isWin })
   streams.set(req.id, child)
   // stdout and stderr share one buffer each so partial lines are never split.
   const buffers = { out: '', err: '' }
@@ -101,7 +103,15 @@ export function stream(req: StreamRequest, onLine: (line: string) => void, onExi
 
 export function cancel(id: string) {
   const child = streams.get(id)
-  if (child && !child.killed) child.kill(isWin ? undefined : 'SIGINT')
+  if (!child || child.killed) return
+  if (isWin || !child.pid) child.kill()
+  else {
+    try {
+      process.kill(-child.pid, 'SIGINT')
+    } catch {
+      child.kill('SIGINT')
+    }
+  }
 }
 
 const shq = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`
@@ -160,4 +170,25 @@ export function kubeconfigFor(context: string): string {
   writeFileSync(file, `apiVersion: v1\nkind: Config\ncurrent-context: ${JSON.stringify(context)}\n`)
   const base = process.env.KUBECONFIG || join(home, '.kube', 'config')
   return [file, base].join(delimiter)
+}
+
+/**
+ * Finds the container runtime kind should use. kind, Substrate's and AX's
+ * scripts call `docker`; on podman-only machines we put a shim first on PATH
+ * and switch kind to its podman provider.
+ */
+export function containerRuntime(shimDir: string): ContainerRuntime {
+  if (which('docker')) return { runtime: 'docker', env: {} }
+  if (!which('podman')) return { runtime: null, env: {} }
+  if (isWin) return { runtime: 'podman', env: { KIND_EXPERIMENTAL_PROVIDER: 'podman' } }
+  mkdirSync(shimDir, { recursive: true })
+  const shim = join(shimDir, 'docker')
+  writeFileSync(shim, DOCKER_SHIM)
+  chmodSync(shim, 0o755)
+  return { runtime: 'podman', env: { PATH: shimDir + delimiter + PATH, KIND_EXPERIMENTAL_PROVIDER: 'podman' } }
+}
+
+/** Streams run in their own process groups, so stop them when the app quits. */
+export function cancelAll() {
+  for (const id of streams.keys()) cancel(id)
 }

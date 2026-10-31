@@ -6,7 +6,7 @@ import {
   parseWorkspaceYAML, parseWorkspaces,
 } from './resources'
 
-export type Section = 'overview' | 'board' | 'topology' | 'designer' | 'deploy'
+export type Section = 'overview' | 'board' | 'topology' | 'designer' | 'deploy' | 'clusters'
 
 export interface ActivityEntry {
   id: number

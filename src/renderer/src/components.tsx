@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react'
-import { CircleCheck, CirclePause, CirclePlay, CircleHelp, Hourglass, OctagonX, Trash2, type LucideIcon } from 'lucide-react'
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { CircleCheck, CirclePause, CirclePlay, CircleHelp, Hourglass, OctagonX, Terminal, Trash2, type LucideIcon } from 'lucide-react'
 import { type Phase, phaseColor, phaseLabel } from './model/resources'
 
 const PHASE_ICON: Record<string, LucideIcon> = {
@@ -83,6 +83,57 @@ export function Segmented<T extends string>({ value, options, onChange }: {
           {o.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+export interface ConsoleLine {
+  id: number
+  text: string
+  header?: 'start' | 'ok' | 'fail'
+}
+
+/** A dark, auto-scrolling log pane for streamed command output. */
+export function LogConsole({ lines, chip, onClear, clearDisabled, empty }: {
+  lines: ConsoleLine[]
+  chip?: ReactNode
+  onClear: () => void
+  clearDisabled?: boolean
+  empty: ReactNode
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const stick = useRef(true)
+
+  useEffect(() => {
+    if (stick.current && ref.current) ref.current.scrollTop = ref.current.scrollHeight
+  }, [lines.length])
+
+  return (
+    <div className="console">
+      <div className="row console-bar">
+        <Terminal size={13} />
+        <span>Output</span>
+        {chip}
+        <div className="spacer" />
+        <span className="faint">{lines.length} lines</span>
+        <button className="btn small ghost" onClick={onClear} disabled={clearDisabled}>Clear</button>
+      </div>
+      <div
+        className="console-body selectable"
+        ref={ref}
+        onScroll={(e) => {
+          const el = e.currentTarget
+          stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+        }}
+      >
+        {lines.length === 0 ? (
+          <div className="console-empty">{empty}</div>
+        ) : (
+          lines.map((l) => (
+            <div key={l.id} className={`console-line ${l.header ?? ''}`}>{l.text || ' '}</div>
+          ))
+        )}
+      </div>
     </div>
   )
 }

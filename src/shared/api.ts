@@ -41,6 +41,12 @@ export interface PlatformInfo {
   version: string
 }
 
+export interface ContainerRuntime {
+  runtime: 'docker' | 'podman' | null
+  /** Environment overrides for commands that drive kind (PATH shim, kind provider). */
+  env: Record<string, string>
+}
+
 export interface StudioAPI {
   platform(): Promise<PlatformInfo>
   run(req: RunRequest): Promise<CommandResult>
@@ -54,6 +60,7 @@ export interface StudioAPI {
   /** Writes a kubeconfig that only sets current-context; returns a KUBECONFIG value. */
   kubeconfigFor(context: string): Promise<string>
   fileExists(path: string): Promise<boolean>
+  containerRuntime(): Promise<ContainerRuntime>
   openYAML(defaultDir?: string): Promise<{ path: string; text: string } | null>
   saveYAML(name: string, text: string): Promise<string | null>
   onMenu(cb: (action: string) => void): () => void

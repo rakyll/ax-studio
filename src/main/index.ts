@@ -45,8 +45,8 @@ function send(action: string) {
 }
 
 function buildMenu() {
-  const sections = ['overview', 'board', 'topology', 'designer', 'deploy']
-  const titles = ['Overview', 'Task Board', 'Topology', 'Designer', 'Deploy']
+  const sections = ['overview', 'board', 'topology', 'designer', 'deploy', 'clusters']
+  const titles = ['Overview', 'Task Board', 'Topology', 'Designer', 'Deploy', 'Clusters']
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [{ role: 'appMenu' as const }] : []),
     {
@@ -108,6 +108,7 @@ function registerIPC() {
   ipcMain.handle('openTerminal', (_e, title: string, program: string, args: string[]) => sh.openTerminal(title, program, args))
   ipcMain.handle('kubeconfigFor', (_e, context: string) => sh.kubeconfigFor(context))
   ipcMain.handle('fileExists', (_e, path: string) => existsSync(expand(path)))
+  ipcMain.handle('containerRuntime', () => sh.containerRuntime(join(app.getPath('userData'), 'bin')))
   ipcMain.handle('openYAML', async (_e, defaultDir?: string) => {
     const r = await dialog.showOpenDialog(win!, {
       defaultPath: defaultDir ? expand(defaultDir) : undefined,
@@ -142,3 +143,5 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (!isMac) app.quit()
 })
+
+app.on('will-quit', () => sh.cancelAll())

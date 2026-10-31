@@ -11,6 +11,7 @@ and packaged as a native app for macOS, Windows and Linux.
 | **Topology** | Sources → workspaces → tasks → models graph; running edges animate. |
 | **Designer** | Form + live composition diagram + generated YAML (or raw edit). Templates, open/save, apply. |
 | **Deploy** | Kubernetes pipeline: Agent Substrate → Build & push images → AX → Verify, with a live console. |
+| **Clusters** | Create, inspect and delete local AX clusters on kind: each shows its Kind, Agent Substrate and AX layers. Install or reinstall AX, open a cluster in Studio. |
 
 The app shells out to the `ax` CLI (and `kubectl`, `make`, `go`, `podman`/`docker`
 for deploys). It passes `--context` on every call and gives deploy steps a
@@ -56,6 +57,22 @@ swift scripts/make-icon.swift ~/ax/assets/axel.svg build-resources/icon.icns   #
 
 Steps run in the AX repo (Settings → repo path) with `/bin/sh`.
 
+## Clusters
+
+Creating a cluster (or installing AX on an existing kind cluster) runs the AX
+repo's `hack/setup-e2e-kind.sh` with `KIND_CLUSTER_NAME`, `AX_WORKER_REPLICAS`
+and, optionally, `SUBSTRATE_REF`. The script creates the kind cluster and a local
+registry on `localhost:5001`, installs Agent Substrate at the version AX is built
+against, deploys a gVisor WorkerPool, and builds and deploys AX. The script writes
+its kubeconfig to `.tmp/kubeconfig-<name>`; the app then merges `kind-<name>` into
+your kubeconfig, keeping its current context and saving a `.ax-studio.bak` backup.
+Reinstalling AX recreates its Postgres, so existing tasks and workspaces are lost.
+
+On machines with podman but no docker, the app puts a small `docker` shim in
+front of PATH and sets `KIND_EXPERIMENTAL_PROVIDER=podman`. The shim
+(`src/main/docker-shim.sh`) maps `buildx build --push` and `buildx imagetools
+inspect` onto podman manifests and skips TLS for the local registry.
+
 ## Portability notes
 
 - **PATH:** GUI apps don't inherit your terminal's PATH, so on macOS and Linux the app reads it
@@ -65,5 +82,3 @@ Steps run in the AX repo (Settings → repo path) with `/bin/sh`.
   otherwise `cmd`.
 - **Linux:** "Open shell" tries `x-terminal-emulator`, gnome-terminal, konsole,
   xfce4-terminal, kitty, alacritty, then xterm.
-
-The original SwiftUI prototype lives in [`swift/`](swift/).

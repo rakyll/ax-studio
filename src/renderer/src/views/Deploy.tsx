@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import {
   ChevronRight, CircleCheck, CircleX, Container, Database, Layers3, Loader, MinusCircle, Network, Package, Play,
   Server, ShieldCheck, Square, Square as SquareIcon, SquareCheck as CheckSquare, Terminal, TriangleAlert, Circle, type LucideIcon,
 } from 'lucide-react'
 import { deploy, useDeploy, type Arch, type DeployStep } from '../model/deploy'
-import { PageHeader, Toggle } from '../components'
+import { LogConsole, PageHeader, Toggle } from '../components'
 import '../styles/deploy.css'
 
 const ARCHES: Arch[] = ['amd64', 'arm64']
@@ -141,43 +141,15 @@ function Connector({ from, to }: { from: DeployStep; to: DeployStep }) {
 
 function Console({ filter, onClear }: { filter: string | null; onClear: () => void }) {
   const d = useDeploy()
-  const ref = useRef<HTMLDivElement>(null)
-  const stick = useRef(true)
   const lines = filter ? d.log.filter((l) => l.step === filter) : d.log
   const filterTitle = d.steps.find((s) => s.id === filter)?.title
-
-  useEffect(() => {
-    if (stick.current && ref.current) ref.current.scrollTop = ref.current.scrollHeight
-  }, [lines.length])
-
   return (
-    <div className="console">
-      <div className="row console-bar">
-        <Terminal size={13} />
-        <span>Output</span>
-        {filterTitle && (
-          <button className="chip console-chip" onClick={onClear} title="Show all steps">{filterTitle} ×</button>
-        )}
-        <div className="spacer" />
-        <span className="faint">{lines.length} lines</span>
-        <button className="btn small ghost" onClick={() => deploy.set({ log: [] })} disabled={d.running}>Clear</button>
-      </div>
-      <div
-        className="console-body selectable"
-        ref={ref}
-        onScroll={(e) => {
-          const el = e.currentTarget
-          stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
-        }}
-      >
-        {lines.length === 0 ? (
-          <div className="console-empty">Run the pipeline, or click ▶ on a single step.</div>
-        ) : (
-          lines.map((l) => (
-            <div key={l.id} className={`console-line ${l.header ?? ''}`}>{l.text || ' '}</div>
-          ))
-        )}
-      </div>
-    </div>
+    <LogConsole
+      lines={lines}
+      chip={filterTitle && <button className="chip console-chip" onClick={onClear} title="Show all steps">{filterTitle} ×</button>}
+      onClear={() => deploy.set({ log: [] })}
+      clearDisabled={d.running}
+      empty="Run the pipeline, or click ▶ on a single step."
+    />
   )
 }

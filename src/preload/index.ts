@@ -20,6 +20,7 @@ const api: StudioAPI = {
   openTerminal: (title, program, args) => ipcRenderer.invoke('openTerminal', title, program, args),
   kubeconfigFor: (context) => ipcRenderer.invoke('kubeconfigFor', context),
   fileExists: (path) => ipcRenderer.invoke('fileExists', path),
+  containerRuntime: () => ipcRenderer.invoke('containerRuntime'),
   openYAML: (dir) => ipcRenderer.invoke('openYAML', dir),
   saveYAML: (name, text) => ipcRenderer.invoke('saveYAML', name, text),
   onMenu: (cb) => listen<string>('menu', cb),
