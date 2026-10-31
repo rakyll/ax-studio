@@ -110,3 +110,9 @@
 .stage.done .stage-dot { border-color: var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
 .stage-label { font-size: 11px; color: var(--text-3); }
 .stage.done .stage-label { color: var(--text-2); font-weight: 500; }
+.board-col-new {
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 8px; flex: none;
+  border: 1px dashed var(--border-strong); border-radius: 9px; background: transparent;
+  color: var(--text-2); font: inherit; font-size: 12px; transition: color .15s, border-color .15s, background .15s;
+}
+.board-col-new:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }

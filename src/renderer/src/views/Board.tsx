@@ -112,7 +112,11 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
                         onDelete={() => setConfirm(t)}
                       />
                     ))}
-                    {tasks.length === 0 && (
+                    {p === 'pending' ? (
+                      <button className="board-col-new" onClick={() => store.setSection('designer')} title="Design a new task in the Designer">
+                        <Plus size={13} />New task in Designer
+                      </button>
+                    ) : tasks.length === 0 && (
                       <div className="board-col-empty">
                         {droppable ? `Drop to ${p === 'running' ? 'resume' : 'suspend'}` : 'No tasks'}
                       </div>
