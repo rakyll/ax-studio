@@ -49,6 +49,8 @@ export interface ClustersState {
   loading: boolean
   loaded: boolean
   runtime: ContainerRuntime | null
+  /** Memory of the podman machine in MiB, on macOS and Windows. */
+  machineMemory: number | null
   tools: Record<'kind' | 'kubectl' | 'go' | 'bash', boolean>
   scriptFound: boolean
   op: Operation | null
@@ -57,6 +59,8 @@ export interface ClustersState {
 }
 
 const SCRIPT = 'hack/setup-e2e-kind.sh'
+/** Below this (MiB) the podman machine OOM-kills rustc while building Substrate's envoy image. */
+const MIN_MACHINE_MEMORY = 6144
 const shq = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`
 export const NAME_RE = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/
 
@@ -99,6 +103,7 @@ class ClustersStore {
     loading: false,
     loaded: false,
     runtime: null,
+    machineMemory: null,
     tools: { kind: true, kubectl: true, go: true, bash: true },
     scriptFound: true,
     op: null,
@@ -147,6 +152,11 @@ class ClustersStore {
       window.studio.fileExists(`${store.state.settings.repoPath}/${SCRIPT}`),
     ])
     this.set({ runtime, tools: { kind: !!kind, kubectl: !!kubectl, go: !!go, bash: !!bash }, scriptFound })
+    if (runtime.runtime === 'podman') {
+      const r = await window.studio.run({ program: 'podman', args: ['machine', 'inspect', '--format', '{{.Resources.Memory}}'] })
+      const mib = parseInt(r.stdout, 10)
+      this.set({ machineMemory: r.status === 0 && mib > 0 ? mib : null })
+    }
     await this.refresh()
   }
 
@@ -203,6 +213,13 @@ class ClustersStore {
     if (!this.state.tools.go) p.push('Go is not installed; Substrate and AX are built from source.')
     if (!this.state.tools.bash) p.push('bash is required to run the setup script.')
     return p
+  }
+
+  /** Likely failures that don't block creating a cluster. */
+  get warnings(): string[] {
+    const mib = this.state.machineMemory
+    if (mib === null || mib >= MIN_MACHINE_MEMORY) return []
+    return [`The podman machine has ${Math.round(mib / 1024)} GiB of memory; building Agent Substrate needs about ${MIN_MACHINE_MEMORY / 1024} GiB and is killed with less. Run: podman machine stop && podman machine set --memory 8192 && podman machine start`]
   }
 
   nameProblem(name: string): string | null {

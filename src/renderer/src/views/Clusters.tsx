@@ -258,6 +258,7 @@ function NewClusterForm() {
       </div>
       {f.name && nameProblem && <div className="row problem-line"><TriangleAlert size={13} />{nameProblem}</div>}
       {clusters.buildProblems.map((p) => <div key={p} className="row problem-line"><TriangleAlert size={13} />{p}</div>)}
+      {clusters.warnings.map((p) => <div key={p} className="row problem-line selectable"><TriangleAlert size={13} />{p}</div>)}
       <button className="btn primary" disabled={busy || !!nameProblem || blockers.length > 0} onClick={() => void clusters.create()}>
         <Play size={13} fill="currentColor" />Create cluster
       </button>
