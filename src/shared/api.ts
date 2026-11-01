@@ -78,8 +78,6 @@ export interface StudioAPI {
   onSessionData(cb: (d: SessionData) => void): () => void
   onSessionExit(cb: (e: StreamExit) => void): () => void
   which(program: string): Promise<string | null>
-  /** Opens `program args...` in the platform's terminal. */
-  openTerminal(title: string, program: string, args: string[]): Promise<string | null>
   /** Writes a kubeconfig that only sets current-context; returns a KUBECONFIG value. */
   kubeconfigFor(context: string): Promise<string>
   fileExists(path: string): Promise<boolean>

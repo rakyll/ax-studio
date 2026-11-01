@@ -24,7 +24,6 @@ const api: StudioAPI = {
   onSessionData: (cb) => listen<SessionData>('session:data', cb),
   onSessionExit: (cb) => listen<StreamExit>('session:exit', cb),
   which: (program) => ipcRenderer.invoke('which', program),
-  openTerminal: (title, program, args) => ipcRenderer.invoke('openTerminal', title, program, args),
   kubeconfigFor: (context) => ipcRenderer.invoke('kubeconfigFor', context),
   fileExists: (path) => ipcRenderer.invoke('fileExists', path),
   containerRuntime: () => ipcRenderer.invoke('containerRuntime'),

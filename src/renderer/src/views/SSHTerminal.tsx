@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { ExternalLink, Plus, RotateCcw } from 'lucide-react'
+import { Check, Copy, Plus, RotateCcw } from 'lucide-react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
@@ -26,6 +26,9 @@ exec sh -i`
 /** In line mode, drop what a missing terminal makes the shell say, and end lines as a terminal expects. */
 const lineOutput = (s: string) => s.replace(/^.*can't access tty; job control turned off\r?\n?/m, '').replace(/\r?\n/g, '\r\n')
 
+/** Quotes a word for a POSIX shell when it needs it. */
+const shq = (s: string) => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`)
+
 /** `--shell=<command>` on the command line runs a command in the first session, for screenshots. */
 let firstCommand = new URLSearchParams(location.search).get('shell')
 
@@ -43,6 +46,13 @@ export function SSHTerminal({ tab, active }: { tab: SSHTab; active: boolean }) {
   const [size, setSize] = useState('')
   const [resized, setResized] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const [copied, setCopied] = useState(false)
+  const copyCommand = () => {
+    const argv = [s.settings.axPath, ...tab.scope, 'ssh', t.name]
+    void navigator.clipboard.writeText(argv.map(shq).join(' '))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1400)
+  }
 
   useEffect(() => {
     const el = host.current
@@ -192,9 +202,8 @@ export function SSHTerminal({ tab, active }: { tab: SSHTab; active: boolean }) {
         <button className="btn small ghost" title="Open another terminal to this task" onClick={() => store.duplicateShell(tab)}>
           <Plus size={12} /> New session
         </button>
-        <button className="btn small ghost" title="Open in your terminal app" disabled={tab.context !== s.context}
-          onClick={() => void store.openExternalShell(t)}>
-          <ExternalLink size={12} /> Open in Terminal
+        <button className="btn small ghost" title="Copy the ax ssh command for this task" onClick={copyCommand}>
+          {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy ax ssh</>}
         </button>
       </div>
       {tab.context === s.context && s.details[t.id]?.debug === false && (

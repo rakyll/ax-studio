@@ -114,52 +114,6 @@ export function cancel(id: string) {
   }
 }
 
-const shq = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`
-const cmdq = (s: string) => (/[\s"&|<>^]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s)
-
-/**
- * Opens an interactive terminal running `program args`. Returns an error
- * message, or null on success.
- */
-export function openTerminal(title: string, program: string, args: string[]): string | null {
-  const exe = which(program) ?? program
-  if (process.platform === 'darwin') {
-    // A .command file opens in Terminal without needing Automation permission.
-    const file = join(tmpdir(), `ax-studio-${title.replace(/[^\w-]/g, '_')}.command`)
-    writeFileSync(file, `#!/bin/zsh -l\nclear\necho ${shq('→ ' + title)}\n${[exe, ...args].map(shq).join(' ')}\n`)
-    chmodSync(file, 0o755)
-    spawn('open', [file], { detached: true, stdio: 'ignore' }).unref()
-    return null
-  }
-  if (isWin) {
-    const line = [exe, ...args].map(cmdq).join(' ')
-    const wt = which('wt')
-    const child = wt
-      ? spawn(wt, ['new-tab', '--title', title, 'cmd', '/k', line], { detached: true, stdio: 'ignore', env })
-      : spawn('cmd.exe', ['/c', 'start', `"${title}"`, 'cmd', '/k', line], { detached: true, stdio: 'ignore', env, shell: false })
-    child.unref()
-    return null
-  }
-  const line = `${[exe, ...args].map(shq).join(' ')}; echo; read -p 'Press enter to close' _`
-  const candidates: [string, string[]][] = [
-    ['x-terminal-emulator', ['-e', 'bash', '-c', line]],
-    ['gnome-terminal', ['--title', title, '--', 'bash', '-c', line]],
-    ['konsole', ['-p', `tabtitle=${title}`, '-e', 'bash', '-c', line]],
-    ['xfce4-terminal', ['--title', title, '-x', 'bash', '-c', line]],
-    ['kitty', ['--title', title, 'bash', '-c', line]],
-    ['alacritty', ['-t', title, '-e', 'bash', '-c', line]],
-    ['xterm', ['-T', title, '-e', 'bash', '-c', line]],
-  ]
-  for (const [term, targs] of candidates) {
-    const p = which(term)
-    if (p) {
-      spawn(p, targs, { detached: true, stdio: 'ignore', env }).unref()
-      return null
-    }
-  }
-  return 'No terminal emulator found (tried x-terminal-emulator, gnome-terminal, konsole, xterm, …)'
-}
-
 /**
  * A kubeconfig that only sets current-context, prepended to KUBECONFIG, so
  * kubectl calls in the Makefile hit the chosen cluster without changing the

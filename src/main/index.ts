@@ -134,7 +134,6 @@ function registerIPC() {
   ipcMain.handle('session:eof', (_e, id: string) => sh.endSessionInput(id))
   ipcMain.handle('session:close', (_e, id: string) => sh.closeSession(id))
   ipcMain.handle('which', (_e, program: string) => sh.which(program))
-  ipcMain.handle('openTerminal', (_e, title: string, program: string, args: string[]) => sh.openTerminal(title, program, args))
   ipcMain.handle('kubeconfigFor', (_e, context: string) => sh.kubeconfigFor(context))
   ipcMain.handle('fileExists', (_e, path: string) => existsSync(expand(path)))
   ipcMain.handle('containerRuntime', () => sh.containerRuntime(join(app.getPath('userData'), 'bin')))

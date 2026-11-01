@@ -315,12 +315,6 @@ class Store {
     this.set({ sshTabs: rest, sshActive: active })
   }
 
-  async openExternalShell(t: AXTask, command?: string) {
-    const args = [...this.scope, 'ssh', t.name, ...(command ? ['--', 'sh', '-c', command] : [])]
-    const err = await window.studio.openTerminal(`ax ssh ${t.name} (${this.state.context})`, this.state.settings.axPath, args)
-    if (err) this.log(`Open shell ${t.name}`, err, false)
-  }
-
   stop() {
     if (this.timer) clearTimeout(this.timer)
   }
