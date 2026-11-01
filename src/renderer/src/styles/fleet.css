@@ -1,0 +1,37 @@
+.fleet-page { display: flex; height: 100%; min-width: 0; }
+.fleet { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; }
+.fleet-head { padding: 24px 28px 0; flex: none; }
+.fleet-head .page-header { margin-bottom: 12px; }
+.fleet-summary { gap: 12px; }
+.fleet-scroll { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid var(--border); }
+.fleet-groups { padding: 20px 28px 28px; columns: 340px; column-gap: 16px; }
+
+.fleet-group { break-inside: avoid; margin-bottom: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.fleet-group-head { display: flex; align-items: center; gap: 10px; }
+.fleet-ws-icon {
+  width: 30px; height: 30px; border-radius: 8px; flex: none; display: flex; align-items: center; justify-content: center;
+  color: var(--purple); background: color-mix(in srgb, var(--purple) 14%, transparent);
+}
+.fleet-ws-name { font-weight: 600; font-size: 13px; }
+.fleet-sources { display: flex; flex-wrap: wrap; gap: 6px; }
+.fleet-source {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-2);
+  padding: 2px 7px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border);
+}
+.fleet-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.fleet-none { padding: 6px 2px; }
+
+.fleet-tile {
+  all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--c) 7%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--c);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.fleet-tile:hover { transform: translateY(-1px); box-shadow: inset 3px 0 0 var(--c), var(--shadow-lift); }
+.fleet-tile.selected { box-shadow: inset 3px 0 0 var(--c), 0 0 0 2px var(--accent); }
+.fleet-tile.suspended, .fleet-tile.completed { background: var(--surface); }
+.fleet-tile-top { gap: 4px; }
+.fleet-tile-phase { color: var(--text-2); }
+.fleet-tile-name { font-weight: 600; font-size: 12.5px; }
+.fleet-tile-meta { gap: 4px; min-width: 0; }

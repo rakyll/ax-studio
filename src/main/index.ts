@@ -84,8 +84,8 @@ function act(action: string, show = true) {
 }
 
 function buildMenu() {
-  const sections = ['overview', 'topology', 'designer', 'shell', 'clusters']
-  const titles = ['Activity', 'Network', 'Designer', 'Shell', 'Clusters']
+  const sections = ['overview', 'topology', 'fleet', 'orbit', 'designer', 'shell', 'clusters']
+  const titles = ['Activity', 'Network', 'Fleet', 'Orbit', 'Designer', 'Shell', 'Clusters']
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [{ role: 'appMenu' as const }] : []),
     {
