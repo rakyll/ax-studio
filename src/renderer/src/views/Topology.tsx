@@ -142,7 +142,7 @@ export function Topology() {
   return (
     <div className="topology">
       <div className="topology-head">
-        <PageHeader title="Topology" subtitle="How sources feed workspaces and workspaces feed tasks. Running edges flow.">
+        <PageHeader title="Network" subtitle="How sources feed workspaces and workspaces feed tasks. Running edges flow.">
           <div className="row topo-legend">
             {LEGEND.map((p) => (
               <span key={p} className="row" style={{ gap: 4 }}>

@@ -64,7 +64,7 @@ function Digest() {
       <div className="digest-divider" />
 
       <div className="digest-side">
-        <button className="row digest-link" onClick={() => store.setSection('topology')} title="Open Topology">
+        <button className="row digest-link" onClick={() => store.setSection('topology')} title="Open Network">
           <FolderGit2 size={14} color="var(--purple)" /><span className="num">{s.workspaces.length}</span>
           <span className="muted">workspaces</span>
           <Cpu size={14} color="var(--teal)" style={{ marginLeft: 8 }} /><span className="num">{s.models.length}</span>

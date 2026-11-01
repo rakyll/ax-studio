@@ -11,9 +11,9 @@ import { Designer } from './views/Designer'
 import { Clusters } from './views/Clusters'
 import './styles/app.css'
 
-const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Workspace' | 'Build' }[] = [
-  { id: 'overview', title: 'Activity', icon: Gauge, group: 'Workspace' },
-  { id: 'topology', title: 'Topology', icon: Network, group: 'Workspace' },
+const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Overview' | 'Build' }[] = [
+  { id: 'overview', title: 'Activity', icon: Gauge, group: 'Overview' },
+  { id: 'topology', title: 'Network', icon: Network, group: 'Overview' },
   { id: 'designer', title: 'Designer', icon: SquarePen, group: 'Build' },
   { id: 'clusters', title: 'Clusters', icon: Boxes, group: 'Build' },
 ]
@@ -39,7 +39,7 @@ export function App() {
       <aside className="sidebar">
         <div className="titlebar-drag sidebar-top" />
         <nav>
-          {(['Workspace', 'Build'] as const).map((g) => (
+          {(['Overview', 'Build'] as const).map((g) => (
             <div key={g} className="nav-group">
               <div className="nav-heading">{g}</div>
               {SECTIONS.filter((x) => x.group === g).map((x) => (

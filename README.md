@@ -7,13 +7,13 @@ AX clusters. Built with Electron, React and TypeScript for macOS, Windows and Li
 
 - **Activity:** a task board by phase. Drag cards to resume or suspend tasks,
   inspect conditions, follow logs, and open a shell over `ax ssh`.
-- **Topology:** a graph of sources, workspaces and tasks.
+- **Network:** a graph of sources, workspaces and tasks.
 - **Designer:** build tasks with a form or raw YAML, then apply them.
 - **Clusters:** create, inspect and delete local AX clusters on kind.
 
 | | |
 |---|---|
-| ![Topology](docs/screenshots/topology.png) **Topology** | ![Designer](docs/screenshots/designer.png) **Designer** |
+| ![Network](docs/screenshots/topology.png) **Network** | ![Designer](docs/screenshots/designer.png) **Designer** |
 | ![Clusters](docs/screenshots/clusters.png) **Clusters** | ![Task logs](docs/screenshots/logs.png) **Task logs** |
 
 The app calls the `ax` CLI and `kubectl`. It passes `--context` on every call,
