@@ -14,7 +14,7 @@ export function Overview() {
   return (
     <TaskBoard before={
       <>
-        <PageHeader title="Overview" subtitle={subtitle} />
+        <PageHeader title="Activity" subtitle={subtitle} />
         {s.connectionError && s.tasks.length === 0 && <ConnectionProblem message={s.connectionError} />}
         <Digest />
       </>

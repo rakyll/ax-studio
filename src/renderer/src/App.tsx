@@ -12,7 +12,7 @@ import { Clusters } from './views/Clusters'
 import './styles/app.css'
 
 const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Workspace' | 'Build' }[] = [
-  { id: 'overview', title: 'Overview', icon: Gauge, group: 'Workspace' },
+  { id: 'overview', title: 'Activity', icon: Gauge, group: 'Workspace' },
   { id: 'topology', title: 'Topology', icon: Network, group: 'Workspace' },
   { id: 'designer', title: 'Designer', icon: SquarePen, group: 'Build' },
   { id: 'clusters', title: 'Clusters', icon: Boxes, group: 'Build' },

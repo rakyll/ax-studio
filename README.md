@@ -3,9 +3,9 @@
 A desktop app for [AX](../ax): design tasks, watch them run, and create local
 AX clusters. Built with Electron, React and TypeScript for macOS, Windows and Linux.
 
-![Overview](docs/screenshots/overview.png)
+![Activity](docs/screenshots/overview.png)
 
-- **Overview:** a task board by phase. Drag cards to resume or suspend tasks,
+- **Activity:** a task board by phase. Drag cards to resume or suspend tasks,
   inspect conditions, follow logs, and open a shell over `ax ssh`.
 - **Topology:** a graph of sources, workspaces and tasks.
 - **Designer:** build tasks with a form or raw YAML, then apply them.
