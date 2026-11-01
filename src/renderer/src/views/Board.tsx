@@ -202,7 +202,7 @@ function actionsFor(t: AXTask, onDelete: () => void): Action[] {
     a.push({ label: 'Resume', icon: Play, run: () => void store.resume(t) })
   if (t.phase === 'running' || t.phase === 'pending')
     a.push({ label: 'Suspend', icon: Pause, run: () => void store.suspend(t) })
-  if (t.phase === 'running') a.push({ label: 'Shell', icon: Terminal, run: () => store.openShell(t) })
+  if (t.phase === 'running') a.push({ label: 'Terminal', icon: Terminal, run: () => store.openTerminal(t) })
   a.push({ label: 'Delete…', icon: Trash2, run: onDelete, danger: true })
   return a
 }

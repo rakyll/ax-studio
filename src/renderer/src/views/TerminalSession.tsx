@@ -3,7 +3,7 @@ import { Check, Copy, Plus, RotateCcw } from 'lucide-react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
-import { store, useStore, type ShellTab } from '../model/store'
+import { store, useStore, type TerminalTab } from '../model/store'
 
 let sessions = 0
 
@@ -37,14 +37,14 @@ const shq = (s: string) => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replace(/'/g,
 const externalCommand = (ssh: string) =>
   `stty raw -echo; ${ssh} -- sh -c 'command -v script >/dev/null || exec sh -i; exec env TERM=xterm-256color script -qefc "stty rows $0 cols $1; command -v bash >/dev/null && exec bash -i; exec sh -i" /dev/null' "$(tput lines)" "$(tput cols)"; stty sane`
 
-/** `--shell=<command>` on the command line runs a command in the first session, for screenshots. */
-let firstCommand = new URLSearchParams(location.search).get('shell')
+/** `--terminal=<command>` on the command line runs a command in the first session, for screenshots. */
+let firstCommand = new URLSearchParams(location.search).get('terminal')
 
 /**
  * A terminal inside a running task, over `ax ssh`. The session keeps the
  * context it was opened in, and stays connected while its tab is hidden.
  */
-export function ShellTerminal({ tab, active }: { tab: ShellTab; active: boolean }) {
+export function TerminalSession({ tab, active }: { tab: TerminalTab; active: boolean }) {
   const s = useStore()
   const t = tab.task
   const termRef = useRef<Terminal | null>(null)
@@ -85,7 +85,7 @@ export function ShellTerminal({ tab, active }: { tab: ShellTab; active: boolean 
     setStatus('connecting')
     setMode(null)
 
-    const sid = `shell-${++sessions}`
+    const sid = `terminal-${++sessions}`
     let decided: 'pty' | 'line' | null = null
     let pending = ''
     let line = ''
@@ -207,7 +207,7 @@ export function ShellTerminal({ tab, active }: { tab: ShellTab; active: boolean 
           style={{ '--c': status === 'connected' ? 'var(--green)' : status === 'exited' ? 'var(--text-3)' : 'var(--orange)' } as CSSProperties} />
         <strong>{t.name}</strong>
         <span className="spacer" />
-        <button className="btn small ghost" title="Open another terminal to this task" onClick={() => store.duplicateShell(tab)}>
+        <button className="btn small ghost" title="Open another terminal to this task" onClick={() => store.duplicateTerminal(tab)}>
           <Plus size={12} /> New session
         </button>
         <button className="btn small ghost" title="Copy an ax ssh command for your terminal app, with a full terminal" onClick={copyCommand}>

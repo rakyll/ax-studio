@@ -9,7 +9,7 @@ AX clusters. Built with Electron, React and TypeScript for macOS, Windows and Li
   suspend tasks, inspect conditions and follow logs.
 - **Network:** a graph of sources, workspaces and tasks.
 - **Designer:** build tasks with a form or raw YAML, then create them.
-- **Shell:** terminals into running tasks over `ax ssh`, in tabs that stay
+- **Terminal:** sessions into running tasks over `ax ssh`, in tabs that stay
   connected while you use the rest of the app.
 - **Clusters:** create, inspect and delete local AX clusters on kind.
 
@@ -35,7 +35,7 @@ To refresh a screenshot, build (`npm run build`) and run:
 npx electron . --section=clusters --cluster=ax-dev --delay=7000 --screenshot=docs/screenshots/clusters.png
 ```
 
-Other flags: `--context`, `--atespace`, `--task`, `--logs=expanded`, `--shell=<command>`.
+Other flags: `--context`, `--atespace`, `--task`, `--logs=expanded`, `--terminal=<command>`.
 
 ## Package
 

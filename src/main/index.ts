@@ -50,10 +50,10 @@ function createWindow() {
   })
   // `--section=clusters` opens a specific page; `--cluster=name` expands a
   // cluster card; `--context`, `--atespace` and `--task=name` open a task's inspector, and
-  // `--logs=expanded` opens its logs in the large view; `--shell=<command>`
+  // `--logs=expanded` opens its logs in the large view; `--terminal=<command>`
   // opens its terminal and runs a command.
   const query: Record<string, string> = {}
-  for (const k of ['section', 'cluster', 'context', 'atespace', 'task', 'logs', 'shell']) {
+  for (const k of ['section', 'cluster', 'context', 'atespace', 'task', 'logs', 'terminal']) {
     const v = arg(k)
     if (v) query[k] = v
   }
@@ -84,8 +84,8 @@ function act(action: string, show = true) {
 }
 
 function buildMenu() {
-  const sections = ['overview', 'topology', 'designer', 'shell', 'clusters']
-  const titles = ['Activity', 'Network', 'Designer', 'Shell', 'Clusters']
+  const sections = ['overview', 'topology', 'designer', 'terminal', 'clusters']
+  const titles = ['Activity', 'Network', 'Designer', 'Terminal', 'Clusters']
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [{ role: 'appMenu' as const }] : []),
     {

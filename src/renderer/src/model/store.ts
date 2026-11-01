@@ -6,8 +6,8 @@ import {
   parseWorkspaceYAML, parseWorkspaces,
 } from './resources'
 
-export type Section = 'overview' | 'topology' | 'shell' | 'designer' | 'clusters'
-const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'shell', 'clusters']
+export type Section = 'overview' | 'topology' | 'terminal' | 'designer' | 'clusters'
+const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'terminal', 'clusters']
 
 export interface ActivityEntry {
   id: number
@@ -47,17 +47,17 @@ export interface State {
   axVersion: string | null
   /** Whether this ax build has `ax config`; newer builds follow the kubectl context instead. */
   axConfig: boolean
-  /** Open shell terminals, in tab order. */
-  shellTabs: ShellTab[]
-  /** The key of the tab shown on the Shell page. */
-  shellActive: string | null
+  /** Open terminals, in tab order. */
+  terminalTabs: TerminalTab[]
+  /** The key of the tab shown on the Terminal page. */
+  terminalActive: string | null
   settings: Settings
   settingsOpen: boolean
   os: string
 }
 
-/** A shell session, fixed to the task and context it was opened for. */
-export interface ShellTab { key: string; task: AXTask; context: string; scope: string[] }
+/** A terminal session, fixed to the task and context it was opened for. */
+export interface TerminalTab { key: string; task: AXTask; context: string; scope: string[] }
 
 let tabCount = 0
 
@@ -94,8 +94,8 @@ class Store {
     history: [],
     axVersion: null,
     axConfig: true,
-    shellTabs: [],
-    shellActive: null,
+    terminalTabs: [],
+    terminalActive: null,
     settings: loadSettings(),
     settingsOpen: false,
     os: 'darwin',
@@ -107,16 +107,16 @@ class Store {
   private nextID = 1
   /** `?task=` from the command line: select it once it loads. */
   private askedTask = new URLSearchParams(location.search).get('task')
-  private askedShell = new URLSearchParams(location.search).has('shell')
+  private askedTerminal = new URLSearchParams(location.search).has('terminal')
 
-  /** Selects the `?task=` task (and opens its terminal for `?shell=`) once it shows up. */
+  /** Selects the `?task=` task (and opens its terminal for `?terminal=`) once it shows up. */
   private takeAskedTask(tasks: AXTask[]): Partial<State> {
     const t = this.askedTask ? tasks.find((x) => x.name === this.askedTask) : undefined
     if (!t) return {}
     this.askedTask = null
-    if (!this.askedShell) return { selectedTaskID: t.id }
+    if (!this.askedTerminal) return { selectedTaskID: t.id }
     const tab = this.newTab(t)
-    return { selectedTaskID: t.id, section: 'shell', shellTabs: [...this.state.shellTabs, tab], shellActive: tab.key }
+    return { selectedTaskID: t.id, section: 'terminal', terminalTabs: [...this.state.terminalTabs, tab], terminalActive: tab.key }
   }
 
   subscribe = (l: () => void) => {
@@ -282,37 +282,37 @@ class Store {
     await this.loadContexts()
   }
 
-  private newTab(t: AXTask): ShellTab {
+  private newTab(t: AXTask): TerminalTab {
     return { key: `tab-${++tabCount}`, task: t, context: this.state.context, scope: this.scope }
   }
 
-  /** Shows the task's terminal on the Shell page, opening one if there isn't one yet. */
-  openShell(t: AXTask) {
-    const open = this.state.shellTabs.find((x) => x.task.id === t.id && x.context === this.state.context)
+  /** Shows the task's terminal on the Terminal page, opening one if there isn't one yet. */
+  openTerminal(t: AXTask) {
+    const open = this.state.terminalTabs.find((x) => x.task.id === t.id && x.context === this.state.context)
     if (open) {
-      this.set({ shellActive: open.key })
+      this.set({ terminalActive: open.key })
     } else {
       const tab = this.newTab(t)
-      this.set({ shellTabs: [...this.state.shellTabs, tab], shellActive: tab.key })
+      this.set({ terminalTabs: [...this.state.terminalTabs, tab], terminalActive: tab.key })
     }
-    this.setSection('shell')
+    this.setSection('terminal')
   }
 
   /** Opens another terminal to the same task as a tab. */
-  duplicateShell(tab: ShellTab) {
+  duplicateTerminal(tab: TerminalTab) {
     const copy = { ...tab, key: `tab-${++tabCount}` }
-    const tabs = [...this.state.shellTabs]
+    const tabs = [...this.state.terminalTabs]
     tabs.splice(tabs.indexOf(tab) + 1, 0, copy)
-    this.set({ shellTabs: tabs, shellActive: copy.key })
+    this.set({ terminalTabs: tabs, terminalActive: copy.key })
   }
 
-  closeShell(key: string) {
-    const tabs = this.state.shellTabs
+  closeTerminal(key: string) {
+    const tabs = this.state.terminalTabs
     const i = tabs.findIndex((x) => x.key === key)
     if (i < 0) return
     const rest = tabs.filter((x) => x.key !== key)
-    const active = this.state.shellActive === key ? (rest[Math.min(i, rest.length - 1)]?.key ?? null) : this.state.shellActive
-    this.set({ shellTabs: rest, shellActive: active })
+    const active = this.state.terminalActive === key ? (rest[Math.min(i, rest.length - 1)]?.key ?? null) : this.state.terminalActive
+    this.set({ terminalTabs: rest, terminalActive: active })
   }
 
   stop() {
