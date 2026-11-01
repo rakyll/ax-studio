@@ -6,7 +6,7 @@ import {
 import { clusters, useClusters, STAGES, type Cluster, type Operation, type Replicas } from '../model/clusters'
 import { useStore } from '../model/store'
 import { Empty, LogConsole, PageHeader } from '../components'
-import '../styles/deploy.css'
+import '../styles/console.css'
 import '../styles/clusters.css'
 
 type Health = 'ok' | 'warn' | 'fail' | 'none'
@@ -28,7 +28,7 @@ export function Clusters() {
   const [selected, setSelected] = useState<string | null>(new URLSearchParams(location.search).get('cluster'))
 
   return (
-    <div className="deploy">
+    <div className="clusters">
       <div className="clusters-top">
         <PageHeader title="Clusters" subtitle="Local AX clusters on kind: Kubernetes, then Agent Substrate, then the AX control plane.">
           {running && <button className="btn" onClick={() => clusters.cancel()}><Square size={12} />Stop</button>}
@@ -174,11 +174,12 @@ function ClusterCard({ cluster: cl, selected, onSelect }: { cluster: Cluster; se
 /** Shell commands for using the cluster from a terminal. */
 function ConnectCommands({ cluster: cl }: { cluster: Cluster }) {
   const c = useClusters()
+  const s = useStore()
   const provider = c.runtime?.runtime === 'podman' ? 'KIND_EXPERIMENTAL_PROVIDER=podman ' : ''
   const commands = [
     { note: `Import ${cl.context} into your kubeconfig (adds or refreshes it and makes it current)`, cmd: `${provider}kind export kubeconfig --name ${cl.name}` },
     ...(cl.inKubeconfig ? [{ note: 'Already imported: switch kubectl to it', cmd: `kubectl config use-context ${cl.context}` }] : []),
-    ...(cl.ax ? [{ note: 'Point ax at this cluster', cmd: `ax config use-context ${cl.context}` }] : []),
+    ...(cl.ax && s.axConfig ? [{ note: 'Point ax at this cluster', cmd: `ax config use-context ${cl.context}` }] : []),
   ]
   return (
     <div className="connect">

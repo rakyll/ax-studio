@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Maximize2, Minimize2 } from 'lucide-react'
 import { useStore } from '../model/store'
 import type { AXTask } from '../model/resources'
 
@@ -22,6 +23,7 @@ export function TaskLogs({ task: t }: { task: AXTask }) {
   const [status, setStatus] = useState<'following' | 'ended' | 'failed'>('following')
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [expanded, setExpanded] = useState(() => new URLSearchParams(location.search).get('logs') === 'expanded')
   const box = useRef<HTMLPreElement>(null)
   const pinned = useRef(true)
 
@@ -78,12 +80,19 @@ export function TaskLogs({ task: t }: { task: AXTask }) {
   useEffect(() => {
     const el = box.current
     if (el && pinned.current) el.scrollTop = el.scrollHeight
-  }, [lines])
+  }, [lines, expanded])
+
+  useEffect(() => {
+    if (!expanded) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setExpanded(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [expanded])
 
   if (!kube) {
     return <p className="caption muted">Logs are shown for tasks on a Kubernetes context; the local control plane runs tasks as containers on this machine.</p>
   }
-  return (
+  const body = (
     <>
       <pre
         ref={box}
@@ -112,6 +121,24 @@ export function TaskLogs({ task: t }: { task: AXTask }) {
         {status !== 'following' && (
           <button className="btn small ghost" onClick={() => setAttempt((a) => a + 1)}>Reconnect</button>
         )}
+        <button className="btn small ghost" title={expanded ? 'Collapse (Esc)' : 'Expand'} onClick={() => setExpanded((x) => !x)}>
+          {expanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+        </button>
+      </div>
+    </>
+  )
+  if (!expanded) return body
+  return (
+    <>
+      <p className="caption faint">Logs are open in a larger view.</p>
+      <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && setExpanded(false)}>
+        <div className="card task-logs-modal">
+          <div className="row task-logs-title">
+            <strong>{t.name}</strong>
+            <span className="faint">logs</span>
+          </div>
+          {body}
+        </div>
       </div>
     </>
   )

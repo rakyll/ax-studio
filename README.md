@@ -1,7 +1,7 @@
 # AX Studio
 
 A cross-platform desktop app for [AX](../ax): design tasks, watch them run, and
-deploy the control plane to Kubernetes. Built with Electron + React + TypeScript
+create local AX clusters. Built with Electron + React + TypeScript
 and packaged as a native app for macOS, Windows and Linux.
 
 ![Overview](docs/screenshots/overview.png)
@@ -11,7 +11,6 @@ and packaged as a native app for macOS, Windows and Linux.
 | **Overview** | A one-line digest (task count, phase breakdown, a this-session sparkline, workspaces and models, latest activity) above the task board: kanban by phase. Drag a card to Running/Suspended to resume/suspend; the inspector shows conditions and follows the task's logs, with shell and delete. |
 | **Topology** | Sources → workspaces → tasks graph; running edges animate. |
 | **Designer** | Form + live composition diagram + generated YAML (or raw edit). Templates, open/save, apply. |
-| **Deploy** | Kubernetes pipeline: Agent Substrate → Build & push images → AX → Verify, with a live console. |
 | **Clusters** | Create, inspect and delete local AX clusters on kind: each shows its Kind, Agent Substrate and AX layers. Install or reinstall AX, open a cluster in Studio, or click its terminal icon for the commands to import its kubectl context and use it with kubectl and ax. |
 
 ## Screenshots
@@ -19,10 +18,10 @@ and packaged as a native app for macOS, Windows and Linux.
 | | |
 |---|---|
 | ![Topology](docs/screenshots/topology.png) **Topology** | ![Designer](docs/screenshots/designer.png) **Designer** |
-| ![Deploy](docs/screenshots/deploy.png) **Deploy** | ![Clusters](docs/screenshots/clusters.png) **Clusters** |
+| ![Clusters](docs/screenshots/clusters.png) **Clusters** | |
 
 The app shells out to the `ax` CLI (and `kubectl`, `make`, `go`, `podman`/`docker`
-for deploys). It passes `--context` on every call and gives deploy steps a
+to create clusters). It passes `--context` on every call and gives cluster setup a
 temporary single-context `KUBECONFIG`, so it never changes your global ax or
 kubectl context.
 
@@ -34,7 +33,7 @@ npm run dev         # hot-reloading app
 npm run typecheck
 ```
 
-`npx electron . --section=deploy` opens the built app (`npm run build`) on a
+`npx electron . --section=clusters` opens the built app (`npm run build`) on a
 given section. To refresh the README screenshots without the window taking
 focus, render off-screen:
 
@@ -66,17 +65,6 @@ The icon is the AX axolotl (`~/ax/assets/axel.svg`). To regenerate it on macOS:
 swift scripts/make-icon.swift ~/ax/assets/axel.svg build-resources/icon.icns   # also writes icon.png
 ```
 
-## Deploy pipeline
-
-| Step | Runs |
-|---|---|
-| Agent Substrate | `kubectl get nodes` and `kubectl get svc api -n ate-system` |
-| Build & push images | Cross-compiles `ax-server` and `ax-task-runner` for every selected arch (**amd64 + arm64 by default**), builds a multi-arch manifest per image and pushes it, writing `bin/<image>.digest`. podman uses `build --manifest` + `manifest push --all`; docker uses `buildx --platform … --push`. |
-| AX | `make deploy-postgres`, then `make deploy-server` pinned to the pushed digests, then waits for the rollout |
-| Verify | `ax --context <ctx> get tasks` |
-
-Steps run in the AX repo (Settings → repo path) with `/bin/sh`.
-
 ## Clusters
 
 Creating a cluster (or installing AX on an existing kind cluster) runs the AX
@@ -97,7 +85,7 @@ inspect` onto podman manifests and skips TLS for the local registry.
 
 - **PATH:** GUI apps don't inherit your terminal's PATH, so on macOS and Linux the app reads it
   from your login shell (`$SHELL -ilc`) at startup.
-- **Windows:** deploy steps need a POSIX shell. Install Git for Windows; the app uses its
+- **Windows:** cluster setup needs a POSIX shell. Install Git for Windows; the app uses its
   `bash`, plus `make` and `go`. "Open shell" uses Windows Terminal if present,
   otherwise `cmd`.
 - **Linux:** "Open shell" tries `x-terminal-emulator`, gnome-terminal, konsole,

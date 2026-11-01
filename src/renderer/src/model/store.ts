@@ -6,8 +6,8 @@ import {
   parseWorkspaceYAML, parseWorkspaces,
 } from './resources'
 
-export type Section = 'overview' | 'topology' | 'designer' | 'deploy' | 'clusters'
-const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'deploy', 'clusters']
+export type Section = 'overview' | 'topology' | 'designer' | 'clusters'
+const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'clusters']
 
 export interface ActivityEntry {
   id: number
@@ -45,6 +45,8 @@ export interface State {
   activity: ActivityEntry[]
   history: PhaseSample[]
   axVersion: string | null
+  /** Whether this ax build has `ax config`; newer builds follow the kubectl context instead. */
+  axConfig: boolean
   settings: Settings
   settingsOpen: boolean
   os: string
@@ -82,6 +84,7 @@ class Store {
     activity: [],
     history: [],
     axVersion: null,
+    axConfig: true,
     settings: loadSettings(),
     settingsOpen: false,
     os: 'darwin',
@@ -148,13 +151,19 @@ class Store {
     const v = result(await window.studio.run({ program: this.state.settings.axPath, args: ['version'] }))
     this.set({ axVersion: v.ok ? v.stdout.trim() : null })
     const r = result(await window.studio.run({ program: this.state.settings.axPath, args: ['config', 'get-contexts'] }))
-    if (!r.ok) {
+    let contexts: AXContext[]
+    if (r.ok) {
+      contexts = parseContexts(r.stdout)
+      this.set({ axConfig: true })
+    } else if (/unknown command/i.test(r.error)) {
+      contexts = await kubeContexts()
+      this.set({ axConfig: false })
+    } else {
       this.set({ connectionError: r.error })
       return
     }
-    const contexts = parseContexts(r.stdout)
     const asked = new URLSearchParams(location.search).get('context')
-    this.set({ contexts, context: this.state.context || asked || contexts.find((c) => c.isCurrent)?.name || 'local' })
+    this.set({ contexts, context: this.state.context || asked || contexts.find((c) => c.isCurrent)?.name || (this.state.axConfig ? 'local' : contexts[0]?.name ?? '') })
   }
 
   // MARK: Running ax
@@ -243,6 +252,7 @@ class Store {
   apply = (yaml: string) => this.perform('Apply manifest', ['apply', '-f', '-'], yaml)
 
   async makeDefault(ctx: string) {
+    if (!this.state.axConfig) return
     const r = result(await window.studio.run({ program: this.state.settings.axPath, args: ['config', 'use-context', ctx] }))
     this.log(`Use context ${ctx}`, r.ok ? 'now the default for ax' : r.error, r.ok)
     await this.loadContexts()
@@ -267,4 +277,17 @@ export const store = new Store()
 
 export function useStore(): State {
   return useSyncExternalStore(store.subscribe, () => store.state)
+}
+
+/** Kubernetes contexts, for ax builds without `ax config`: they take --context and default to kubectl's. */
+async function kubeContexts(): Promise<AXContext[]> {
+  const [names, current] = await Promise.all([
+    window.studio.run({ program: 'kubectl', args: ['config', 'get-contexts', '-o', 'name'] }),
+    window.studio.run({ program: 'kubectl', args: ['config', 'current-context'] }),
+  ])
+  const cur = result(current).ok ? result(current).stdout.trim() : ''
+  const r = result(names)
+  if (!r.ok) return []
+  return r.stdout.split('\n').map((n) => n.trim()).filter(Boolean)
+    .map((name) => ({ name, description: 'Kubernetes context', isCurrent: name === cur }))
 }

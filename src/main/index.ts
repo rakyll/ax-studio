@@ -39,9 +39,10 @@ function createWindow() {
     return { action: 'deny' }
   })
   // `--section=clusters` opens a specific page; `--cluster=name` expands a
-  // cluster card; `--context=name` and `--task=name` open a task's inspector.
+  // cluster card; `--context=name` and `--task=name` open a task's inspector, and
+  // `--logs=expanded` opens its logs in the large view.
   const query: Record<string, string> = {}
-  for (const k of ['section', 'cluster', 'context', 'task']) {
+  for (const k of ['section', 'cluster', 'context', 'task', 'logs']) {
     const v = arg(k)
     if (v) query[k] = v
   }
@@ -61,8 +62,8 @@ function send(action: string) {
 }
 
 function buildMenu() {
-  const sections = ['overview', 'topology', 'designer', 'deploy', 'clusters']
-  const titles = ['Overview', 'Topology', 'Designer', 'Deploy', 'Clusters']
+  const sections = ['overview', 'topology', 'designer', 'clusters']
+  const titles = ['Overview', 'Topology', 'Designer', 'Clusters']
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [{ role: 'appMenu' as const }] : []),
     {

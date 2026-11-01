@@ -138,7 +138,7 @@ function ConnectionProblem({ message }: { message: string }) {
         <strong>Can't reach the AX control plane</strong>
         <span className="muted selectable">{message}</span>
       </div>
-      <button className="btn" onClick={() => store.setSection('deploy')}>Open Deploy</button>
+      <button className="btn" onClick={() => store.setSection('clusters')}>Open Clusters</button>
     </div>
   )
 }

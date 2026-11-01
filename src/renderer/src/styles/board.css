@@ -119,3 +119,7 @@
 .task-logs { min-height: 64px; max-height: 280px; line-height: 1.45; }
 .task-logs .runner { color: #8d8d93; }
 .task-logs-foot { gap: 6px; margin-top: 6px; }
+
+.task-logs-modal { width: min(1100px, 92vw); height: 86vh; padding: 14px 16px; display: flex; flex-direction: column; animation: fadein .15s ease-out; }
+.task-logs-title { gap: 8px; margin-bottom: 2px; }
+.task-logs-modal .task-logs { flex: 1; max-height: none; font-size: 12.5px; }

@@ -69,7 +69,7 @@ export function run(req: RunRequest): Promise<CommandResult> {
   })
 }
 
-/** The shell used for deploy steps. Steps are POSIX sh; on Windows prefer Git Bash. */
+/** The shell used for cluster setup steps. Steps are POSIX sh; on Windows prefer Git Bash. */
 function shellFor(commandLine: string): [string, string[]] {
   if (!isWin) return ['/bin/sh', ['-c', commandLine]]
   const bash = which('bash')
