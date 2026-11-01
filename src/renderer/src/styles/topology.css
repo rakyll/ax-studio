@@ -4,7 +4,7 @@
 .topology-head .page-header { margin-bottom: 12px; }
 .topo-legend { gap: 12px; }
 
-.topo-scroll { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid var(--border); }
+.topo-scroll { flex: 1; min-height: 0; overflow: auto; border-top: 1px solid var(--border); position: relative; }
 .topo-sizer { position: relative; margin: 8px auto 24px; }
 .topo-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 

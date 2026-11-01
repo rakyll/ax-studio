@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Box, FolderGit2, FolderOpen, GitBranch, Network, Plug, type LucideIcon } from 'lucide-react'
 import { store, useStore, type State } from '../model/store'
 import { type AXTask, type AXWorkspace, type GitRepo, type Phase, phaseColor, phaseLabel, repoName } from '../model/resources'
@@ -34,6 +34,8 @@ const ROW_H = 76
 const GROUP_GAP = 26
 const TOP = 40
 const COLUMN_X = [130, 420, 720]
+const MIN_ZOOM = 0.4
+const MAX_ZOOM = 2
 
 /** Horizontal-tangent cubic Bezier from the right edge of one node to the left edge of the next. */
 function curve(ax: number, ay: number, bx: number, by: number) {
@@ -119,6 +121,41 @@ export function Topology() {
   const [hover, setHover] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
   const graph = useMemo(() => layout(s), [s.tasks, s.workspaces, s.details])
+  const scroller = useRef<HTMLDivElement>(null)
+  const sizer = useRef<HTMLDivElement>(null)
+  // The graph point under the pointer during a pinch, kept there after the zoom renders.
+  const anchor = useRef<{ x: number; y: number; px: number; py: number } | null>(null)
+
+  // A trackpad pinch arrives as a wheel event with ctrlKey set.
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey || !sizer.current) return
+      e.preventDefault()
+      const box = el.getBoundingClientRect()
+      const px = e.clientX - box.left
+      const py = e.clientY - box.top
+      setZoom((z) => {
+        const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * Math.exp(-e.deltaY * 0.01)))
+        const sz = sizer.current!
+        anchor.current = { x: (el.scrollLeft + px - sz.offsetLeft) / z, y: (el.scrollTop + py - sz.offsetTop) / z, px, py }
+        return next
+      })
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
+  useLayoutEffect(() => {
+    const a = anchor.current
+    const el = scroller.current
+    const sz = sizer.current
+    if (!a || !el || !sz) return
+    anchor.current = null
+    el.scrollLeft = a.x * zoom + sz.offsetLeft - a.px
+    el.scrollTop = a.y * zoom + sz.offsetTop - a.py
+  }, [zoom])
 
   /** Nodes connected to the hovered one (itself, its neighbors, and one more hop through workspaces). */
   const lit = useMemo(() => {
@@ -152,17 +189,18 @@ export function Topology() {
                   <span className="caption muted">{phaseLabel(p)}</span>
                 </span>
               ))}
-              <input type="range" min={0.5} max={1.5} step={0.05} value={zoom} title={`Zoom ${Math.round(zoom * 100)}%`}
+              <input type="range" min={MIN_ZOOM} max={MAX_ZOOM} step={0.05} value={zoom} title={`Zoom ${Math.round(zoom * 100)}% (pinch to zoom, double-click to reset)`}
                 onChange={(e) => setZoom(+e.target.value)} style={{ width: 120, marginLeft: 8 }} />
             </div>
           </PageHeader>
         </div>
 
-        <div className="topo-scroll dotgrid">
+        <div className="topo-scroll dotgrid" ref={scroller}
+          onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest('.topo-node')) setZoom(1) }}>
           {empty ? (
             <Empty icon={Network} title="Nothing to draw yet">Create a Workspace or Task in the Designer to see it here.</Empty>
           ) : (
-            <div className="topo-sizer" style={{ width: graph.width * zoom, height: graph.height * zoom }}>
+            <div className="topo-sizer" ref={sizer} style={{ width: graph.width * zoom, height: graph.height * zoom }}>
               <div className="topo-canvas" style={{ width: graph.width, height: graph.height, transform: `scale(${zoom}) translateX(${-graph.left}px)` }}>
                 <svg className="topo-edges" width={graph.width + graph.left} height={graph.height}>
                   <g>
