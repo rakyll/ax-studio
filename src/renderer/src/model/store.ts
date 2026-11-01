@@ -6,8 +6,8 @@ import {
   parseWorkspaceYAML, parseWorkspaces,
 } from './resources'
 
-export type Section = 'overview' | 'topology' | 'ssh' | 'designer' | 'clusters'
-const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'ssh', 'clusters']
+export type Section = 'overview' | 'topology' | 'shell' | 'designer' | 'clusters'
+const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'shell', 'clusters']
 
 export interface ActivityEntry {
   id: number
@@ -47,19 +47,19 @@ export interface State {
   axVersion: string | null
   /** Whether this ax build has `ax config`; newer builds follow the kubectl context instead. */
   axConfig: boolean
-  /** Open ssh terminals, in tab order. */
-  sshTabs: SSHTab[]
-  /** The key of the tab shown on the SSH page. */
-  sshActive: string | null
+  /** Open shell terminals, in tab order. */
+  shellTabs: ShellTab[]
+  /** The key of the tab shown on the Shell page. */
+  shellActive: string | null
   settings: Settings
   settingsOpen: boolean
   os: string
 }
 
-/** An ssh session, fixed to the task and context it was opened for. */
-export interface SSHTab { key: string; task: AXTask; context: string; scope: string[] }
+/** A shell session, fixed to the task and context it was opened for. */
+export interface ShellTab { key: string; task: AXTask; context: string; scope: string[] }
 
-let sshTabs = 0
+let tabCount = 0
 
 const SETTINGS_KEY = 'ax-studio.settings'
 const SECTION_KEY = 'ax-studio.section'
@@ -94,8 +94,8 @@ class Store {
     history: [],
     axVersion: null,
     axConfig: true,
-    sshTabs: [],
-    sshActive: null,
+    shellTabs: [],
+    shellActive: null,
     settings: loadSettings(),
     settingsOpen: false,
     os: 'darwin',
@@ -116,7 +116,7 @@ class Store {
     this.askedTask = null
     if (!this.askedShell) return { selectedTaskID: t.id }
     const tab = this.newTab(t)
-    return { selectedTaskID: t.id, section: 'ssh', sshTabs: [...this.state.sshTabs, tab], sshActive: tab.key }
+    return { selectedTaskID: t.id, section: 'shell', shellTabs: [...this.state.shellTabs, tab], shellActive: tab.key }
   }
 
   subscribe = (l: () => void) => {
@@ -282,37 +282,37 @@ class Store {
     await this.loadContexts()
   }
 
-  private newTab(t: AXTask): SSHTab {
-    return { key: `tab-${++sshTabs}`, task: t, context: this.state.context, scope: this.scope }
+  private newTab(t: AXTask): ShellTab {
+    return { key: `tab-${++tabCount}`, task: t, context: this.state.context, scope: this.scope }
   }
 
-  /** Shows the task's terminal on the SSH page, opening one if there isn't one yet. */
+  /** Shows the task's terminal on the Shell page, opening one if there isn't one yet. */
   openShell(t: AXTask) {
-    const open = this.state.sshTabs.find((x) => x.task.id === t.id && x.context === this.state.context)
+    const open = this.state.shellTabs.find((x) => x.task.id === t.id && x.context === this.state.context)
     if (open) {
-      this.set({ sshActive: open.key })
+      this.set({ shellActive: open.key })
     } else {
       const tab = this.newTab(t)
-      this.set({ sshTabs: [...this.state.sshTabs, tab], sshActive: tab.key })
+      this.set({ shellTabs: [...this.state.shellTabs, tab], shellActive: tab.key })
     }
-    this.setSection('ssh')
+    this.setSection('shell')
   }
 
   /** Opens another terminal to the same task as a tab. */
-  duplicateShell(tab: SSHTab) {
-    const copy = { ...tab, key: `tab-${++sshTabs}` }
-    const tabs = [...this.state.sshTabs]
+  duplicateShell(tab: ShellTab) {
+    const copy = { ...tab, key: `tab-${++tabCount}` }
+    const tabs = [...this.state.shellTabs]
     tabs.splice(tabs.indexOf(tab) + 1, 0, copy)
-    this.set({ sshTabs: tabs, sshActive: copy.key })
+    this.set({ shellTabs: tabs, shellActive: copy.key })
   }
 
   closeShell(key: string) {
-    const tabs = this.state.sshTabs
+    const tabs = this.state.shellTabs
     const i = tabs.findIndex((x) => x.key === key)
     if (i < 0) return
     const rest = tabs.filter((x) => x.key !== key)
-    const active = this.state.sshActive === key ? (rest[Math.min(i, rest.length - 1)]?.key ?? null) : this.state.sshActive
-    this.set({ sshTabs: rest, sshActive: active })
+    const active = this.state.shellActive === key ? (rest[Math.min(i, rest.length - 1)]?.key ?? null) : this.state.shellActive
+    this.set({ shellTabs: rest, shellActive: active })
   }
 
   stop() {

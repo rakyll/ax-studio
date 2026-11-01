@@ -49,7 +49,7 @@ export const uid = () => nextID++
 
 export const TEMPLATES: { id: Template; title: string; group?: string }[] = [
   { id: 'blank', title: 'Blank' },
-  { id: 'simple', title: 'SSH task' },
+  { id: 'simple', title: 'Shell task' },
   { id: 'gemini', title: 'Gemini Agent', group: 'ax-images' },
   { id: 'openai', title: 'OpenAI Agent', group: 'ax-images' },
   { id: 'claude-managed-agents', title: 'Claude Agent', group: 'ax-images' },

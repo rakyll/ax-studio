@@ -3,7 +3,7 @@ import { Check, Copy, Plus, RotateCcw } from 'lucide-react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
-import { store, useStore, type SSHTab } from '../model/store'
+import { store, useStore, type ShellTab } from '../model/store'
 
 let sessions = 0
 
@@ -44,7 +44,7 @@ let firstCommand = new URLSearchParams(location.search).get('shell')
  * A terminal inside a running task, over `ax ssh`. The session keeps the
  * context it was opened in, and stays connected while its tab is hidden.
  */
-export function SSHTerminal({ tab, active }: { tab: SSHTab; active: boolean }) {
+export function ShellTerminal({ tab, active }: { tab: ShellTab; active: boolean }) {
   const s = useStore()
   const t = tab.task
   const termRef = useRef<Terminal | null>(null)
@@ -85,7 +85,7 @@ export function SSHTerminal({ tab, active }: { tab: SSHTab; active: boolean }) {
     setStatus('connecting')
     setMode(null)
 
-    const sid = `ssh-${++sessions}`
+    const sid = `shell-${++sessions}`
     let decided: 'pty' | 'line' | null = null
     let pending = ''
     let line = ''
