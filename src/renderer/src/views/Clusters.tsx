@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import {
   Boxes, Check, Circle, CircleCheck, Copy, CircleDashed, CircleX, Cpu, ExternalLink, Layers3, Loader, Play, Plus, RefreshCw, Server,
-  Square, Trash2, TriangleAlert, Wrench, type LucideIcon,
+  Square, SquareTerminal, Trash2, TriangleAlert, Wrench, type LucideIcon,
 } from 'lucide-react'
 import { clusters, useClusters, STAGES, type Cluster, type Operation, type Replicas } from '../model/clusters'
 import { useStore } from '../model/store'
@@ -126,7 +126,7 @@ function ClusterCard({ cluster: cl, selected, onSelect }: { cluster: Cluster; se
         <Overall rows={rows} />
         <button className={`btn term-btn ${selected ? 'active' : ''}`} onClick={onSelect}
           title={selected ? 'Hide terminal commands' : 'Use this cluster from a terminal'}>
-          <span className="mono term-prompt">&gt;</span>Terminal
+          <SquareTerminal size={14} />Terminal
         </button>
       </div>
 
