@@ -6,8 +6,8 @@ import {
   parseWorkspaceYAML, parseWorkspaces,
 } from './resources'
 
-export type Section = 'overview' | 'topology' | 'shell' | 'designer' | 'clusters'
-const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'shell', 'clusters']
+export type Section = 'overview' | 'topology' | 'timeline' | 'shell' | 'designer' | 'clusters'
+const SECTIONS: Section[] = ['overview', 'topology', 'timeline', 'designer', 'shell', 'clusters']
 
 export interface ActivityEntry {
   id: number
@@ -22,6 +22,12 @@ export interface PhaseSample {
   date: number
   counts: Record<string, number>
 }
+
+/** A phase a task was seen entering, and when; `at` is null if it was already in it when first seen. */
+export interface PhaseChange { phase: Phase; at: number | null }
+
+/** Identifies one creation of a task, so a recreated task doesn't inherit the old one's history. */
+export const phaseLogKey = (t: AXTask, d?: TaskDetail) => (d?.createTime ? `${t.id}@${d.createTime}` : '')
 
 export interface Settings {
   axPath: string
@@ -38,6 +44,8 @@ export interface State {
   workspaces: AXWorkspace[]
   models: AXModel[]
   details: Record<string, TaskDetail>
+  /** Phase changes seen on refresh, by phaseLogKey. ax doesn't record when a task stopped, so the Timeline relies on these. */
+  phaseLog: Record<string, PhaseChange[]>
   selectedTaskID: string | null
   isRefreshing: boolean
   lastRefresh: number | null
@@ -86,6 +94,7 @@ class Store {
     workspaces: [],
     models: [],
     details: {},
+    phaseLog: {},
     selectedTaskID: null,
     isRefreshing: false,
     lastRefresh: null,
@@ -108,6 +117,8 @@ class Store {
   /** `?task=` from the command line: select it once it loads. */
   private askedTask = new URLSearchParams(location.search).get('task')
   private askedShell = new URLSearchParams(location.search).has('shell')
+  private phaseLogScope = ''
+  private lastDetails: number | null = null
 
   /** Selects the `?task=` task (and opens its terminal for `?shell=`) once it shows up. */
   private takeAskedTask(tasks: AXTask[]): Partial<State> {
@@ -165,7 +176,8 @@ class Store {
   }
 
   setScope(patch: { context?: string; atespace?: string }) {
-    this.set({ ...patch, tasks: [], workspaces: [], models: [], details: {}, history: [], selectedTaskID: null, connectionError: null })
+    this.phaseLogScope = ''
+    this.set({ ...patch, tasks: [], workspaces: [], models: [], details: {}, phaseLog: {}, history: [], selectedTaskID: null, connectionError: null })
     void this.refresh()
   }
 
@@ -265,7 +277,41 @@ class Store {
     })
     const wsResults = await Promise.all(this.state.workspaces.map((w) => this.ax(['get', 'workspace', w.name])))
     const workspaces = this.state.workspaces.map((w, i) => (wsResults[i]?.ok ? parseWorkspaceYAML(wsResults[i].stdout, w) : w))
-    this.set({ details, workspaces })
+    this.set({ details, workspaces, phaseLog: this.recordPhases(tasks, details) })
+  }
+
+  /** Adds the phase changes since the last look to the log kept for this context and atespace. */
+  private recordPhases(tasks: AXTask[], details: Record<string, TaskDetail>) {
+    const storageKey = `ax-studio.phases.${this.state.context}/${this.state.atespace}`
+    let log = this.state.phaseLog
+    if (storageKey !== this.phaseLogScope) {
+      try {
+        log = JSON.parse(localStorage.getItem(storageKey) ?? '{}')
+      } catch {
+        log = {}
+      }
+      this.phaseLogScope = storageKey
+      this.lastDetails = null
+    }
+    const now = Date.now()
+    // The change happened sometime since the last look, so split the difference.
+    const at = this.lastDetails ? Math.round((this.lastDetails + now) / 2) : null
+    this.lastDetails = now
+    const next: Record<string, PhaseChange[]> = {}
+    let changed = false
+    for (const t of tasks) {
+      const key = phaseLogKey(t, details[t.id])
+      if (!key) continue
+      const seen = log[key] ?? []
+      const last = seen[seen.length - 1]
+      if (last?.phase === t.phase) next[key] = seen
+      else {
+        next[key] = [...seen, { phase: t.phase, at: last ? at : null }].slice(-50)
+        changed = true
+      }
+    }
+    if (changed || Object.keys(next).length !== Object.keys(log).length) localStorage.setItem(storageKey, JSON.stringify(next))
+    return next
   }
 
   // MARK: Actions

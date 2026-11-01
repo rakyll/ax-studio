@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Boxes, Gauge, Laptop, Network, RefreshCw, Server, Settings as SettingsIcon, SquarePen, SquareTerminal, ChevronDown, Check, type LucideIcon } from 'lucide-react'
+import { Boxes, ChartGantt, Gauge, Laptop, Network, RefreshCw, Server, Settings as SettingsIcon, SquarePen, SquareTerminal, ChevronDown, Check, type LucideIcon } from 'lucide-react'
 import { store, useStore, type Section } from './model/store'
 import logo from './assets/axel.svg'
 import { designer } from './model/designer'
@@ -8,6 +8,7 @@ import type { TraySummary } from '@shared/api'
 import { PulseDot } from './components'
 import { Overview } from './views/Overview'
 import { Topology } from './views/Topology'
+import { Timeline } from './views/Timeline'
 import { Designer } from './views/Designer'
 import { Clusters } from './views/Clusters'
 import { Shell } from './views/Shell'
@@ -16,6 +17,7 @@ import './styles/app.css'
 const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Overview' | 'Build' }[] = [
   { id: 'overview', title: 'Activity', icon: Gauge, group: 'Overview' },
   { id: 'topology', title: 'Network', icon: Network, group: 'Overview' },
+  { id: 'timeline', title: 'Timeline', icon: ChartGantt, group: 'Overview' },
   { id: 'designer', title: 'Designer', icon: SquarePen, group: 'Build' },
   { id: 'shell', title: 'Shell', icon: SquareTerminal, group: 'Build' },
   { id: 'clusters', title: 'Clusters', icon: Boxes, group: 'Build' },
@@ -81,6 +83,7 @@ export function App() {
           <div className="content" key={s.section}>
             {s.section === 'overview' && <Overview />}
             {s.section === 'topology' && <Topology />}
+            {s.section === 'timeline' && <Timeline />}
             {s.section === 'designer' && <Designer />}
             {s.section === 'clusters' && <Clusters />}
           </div>
