@@ -22,10 +22,3 @@ export function workspaceGroups(s: Pick<State, 'tasks' | 'workspaces' | 'details
   if (unbound.length) groups.push({ id: 'ws:-', ws: null, tasks: unbound })
   return groups
 }
-
-/** A CPU limit in cores: "250m" is 0.25. */
-export function cores(cpu?: string): number | undefined {
-  if (!cpu) return undefined
-  const n = cpu.endsWith('m') ? parseFloat(cpu) / 1000 : parseFloat(cpu)
-  return isNaN(n) ? undefined : n
-}
