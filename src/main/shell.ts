@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import DOCKER_SHIM from './docker-shim.sh?raw'
-import type { CommandResult, ContainerRuntime, RunRequest, StreamRequest } from '../shared/api'
+import type { CommandResult, ContainerRuntime, RunRequest, SessionRequest, StreamRequest } from '../shared/api'
 
 const isWin = process.platform === 'win32'
 
@@ -188,7 +188,46 @@ export function containerRuntime(shimDir: string): ContainerRuntime {
   return { runtime: 'podman', env: { PATH: shimDir + delimiter + PATH, KIND_EXPERIMENTAL_PROVIDER: 'podman' } }
 }
 
+const sessions = new Map<string, ChildProcess>()
+
+/**
+ * Runs an interactive program with piped stdio. Output goes out as raw
+ * chunks, since prompts don't end in a newline.
+ */
+export function startSession(req: SessionRequest, onData: (data: string) => void, onExit: (status: number) => void) {
+  const program = which(req.program) ?? req.program
+  const child = spawn(program, req.args, { env: { ...env, TERM: 'dumb' }, windowsHide: true })
+  sessions.set(req.id, child)
+  child.stdout?.setEncoding('utf8').on('data', onData)
+  child.stderr?.setEncoding('utf8').on('data', onData)
+  child.stdin?.on('error', () => {})
+  child.on('error', (e) => onData(`${req.program}: ${e.message}\n`))
+  child.on('close', (code, signal) => {
+    sessions.delete(req.id)
+    onExit(code ?? (signal ? 130 : 1))
+  })
+}
+
+export function writeSession(id: string, data: string) {
+  const stdin = sessions.get(id)?.stdin
+  if (stdin && !stdin.destroyed) stdin.write(data)
+}
+
+export function interruptSession(id: string) {
+  sessions.get(id)?.kill('SIGINT')
+}
+
+export function endSessionInput(id: string) {
+  sessions.get(id)?.stdin?.end()
+}
+
+export function closeSession(id: string) {
+  const child = sessions.get(id)
+  if (child && !child.killed) child.kill()
+}
+
 /** Streams run in their own process groups, so stop them when the app quits. */
 export function cancelAll() {
   for (const id of streams.keys()) cancel(id)
+  for (const id of sessions.keys()) closeSession(id)
 }

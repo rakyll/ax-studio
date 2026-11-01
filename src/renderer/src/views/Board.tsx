@@ -7,6 +7,7 @@ import { store, useStore, type Result } from '../model/store'
 import { type AXTask, type Condition, type Phase, PHASES, comparePhase, phaseColor, phaseLabel, shortImage } from '../model/resources'
 import { Chip, Empty, PhaseBadge, PhaseIcon, since } from '../components'
 import { TaskLogs } from './TaskLogs'
+import { SSHTerminal } from './SSHTerminal'
 import '../styles/board.css'
 
 const ALWAYS: Phase[] = ['pending', 'running', 'suspended', 'failed']
@@ -30,6 +31,7 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
   const phases = [...new Set([...ALWAYS, ...PHASES.filter((p) => present.has(p)), ...present])].sort(comparePhase)
   const selected = s.tasks.find((t) => t.id === s.selectedTaskID) ?? null
   const draggedTask = s.tasks.find((t) => t.name === dragging)
+  const shellTask = s.tasks.find((t) => t.id === s.shellTaskID)
 
   useEffect(() => {
     if (!menu) return
@@ -154,6 +156,7 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
         </div>
       )}
 
+      {shellTask && <SSHTerminal key={shellTask.id} task={shellTask} />}
       {confirm && (
         <div className="modal-backdrop" onMouseDown={() => setConfirm(null)}>
           <div className="modal card fade-in" onMouseDown={(e) => e.stopPropagation()}>
@@ -191,7 +194,7 @@ function actionsFor(t: AXTask, onDelete: () => void): Action[] {
     a.push({ label: 'Resume', icon: Play, run: () => void store.resume(t) })
   if (t.phase === 'running' || t.phase === 'pending')
     a.push({ label: 'Suspend', icon: Pause, run: () => void store.suspend(t) })
-  if (t.phase === 'running') a.push({ label: 'Open Shell', icon: Terminal, run: () => void store.openShell(t) })
+  if (t.phase === 'running') a.push({ label: 'Open Shell', icon: Terminal, run: () => store.openShell(t) })
   a.push({ label: 'Delete…', icon: Trash2, run: onDelete, danger: true })
   return a
 }
@@ -358,8 +361,8 @@ function TaskInspector({ task: t, onDelete }: { task: AXTask; onDelete: () => vo
                 {(output.stdout + output.stderr).trim() || (output.ok ? '(no output)' : `exit ${output.status}`)}
               </pre>
             )}
-            <button className="btn small" style={{ marginTop: 8 }} onClick={() => void store.openShell(t)}>
-              <Terminal size={12} /> Open shell in terminal
+            <button className="btn small" style={{ marginTop: 8 }} onClick={() => store.openShell(t)}>
+              <Terminal size={12} /> Open terminal
             </button>
           </InspectorSection>
         )}

@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import * as sh from './shell'
-import type { RunRequest, StreamRequest } from '../shared/api'
+import type { RunRequest, SessionRequest, StreamRequest } from '../shared/api'
 
 const isMac = process.platform === 'darwin'
 let win: BrowserWindow | null = null
@@ -40,9 +40,10 @@ function createWindow() {
   })
   // `--section=clusters` opens a specific page; `--cluster=name` expands a
   // cluster card; `--context`, `--atespace` and `--task=name` open a task's inspector, and
-  // `--logs=expanded` opens its logs in the large view.
+  // `--logs=expanded` opens its logs in the large view; `--shell=<command>`
+  // opens its terminal and runs a command.
   const query: Record<string, string> = {}
-  for (const k of ['section', 'cluster', 'context', 'atespace', 'task', 'logs']) {
+  for (const k of ['section', 'cluster', 'context', 'atespace', 'task', 'logs', 'shell']) {
     const v = arg(k)
     if (v) query[k] = v
   }
@@ -121,6 +122,17 @@ function registerIPC() {
     )
   })
   ipcMain.handle('cancelStream', (_e, id: string) => sh.cancel(id))
+  ipcMain.handle('session:start', (e, req: SessionRequest) => {
+    sh.startSession(
+      req,
+      (data) => !e.sender.isDestroyed() && e.sender.send('session:data', { id: req.id, data }),
+      (status) => !e.sender.isDestroyed() && e.sender.send('session:exit', { id: req.id, status }),
+    )
+  })
+  ipcMain.handle('session:write', (_e, id: string, data: string) => sh.writeSession(id, data))
+  ipcMain.handle('session:interrupt', (_e, id: string) => sh.interruptSession(id))
+  ipcMain.handle('session:eof', (_e, id: string) => sh.endSessionInput(id))
+  ipcMain.handle('session:close', (_e, id: string) => sh.closeSession(id))
   ipcMain.handle('which', (_e, program: string) => sh.which(program))
   ipcMain.handle('openTerminal', (_e, title: string, program: string, args: string[]) => sh.openTerminal(title, program, args))
   ipcMain.handle('kubeconfigFor', (_e, context: string) => sh.kubeconfigFor(context))

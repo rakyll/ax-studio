@@ -47,6 +47,8 @@ export interface State {
   axVersion: string | null
   /** Whether this ax build has `ax config`; newer builds follow the kubectl context instead. */
   axConfig: boolean
+  /** The task whose ssh terminal is open, if any. */
+  shellTaskID: string | null
   settings: Settings
   settingsOpen: boolean
   os: string
@@ -85,6 +87,7 @@ class Store {
     history: [],
     axVersion: null,
     axConfig: true,
+    shellTaskID: null,
     settings: loadSettings(),
     settingsOpen: false,
     os: 'darwin',
@@ -96,6 +99,15 @@ class Store {
   private nextID = 1
   /** `?task=` from the command line: select it once it loads. */
   private askedTask = new URLSearchParams(location.search).get('task')
+  private askedShell = new URLSearchParams(location.search).has('shell')
+
+  /** Selects the `?task=` task (and opens its terminal for `?shell=`) once it shows up. */
+  private takeAskedTask(tasks: AXTask[]): Partial<State> {
+    const t = this.askedTask ? tasks.find((x) => x.name === this.askedTask) : undefined
+    if (!t) return {}
+    this.askedTask = null
+    return { selectedTaskID: t.id, ...(this.askedShell ? { shellTaskID: t.id } : {}) }
+  }
 
   subscribe = (l: () => void) => {
     this.listeners.add(l)
@@ -217,7 +229,7 @@ class Store {
       this.set({
         connectionError: null,
         tasks: same(tasks, this.state.tasks) ? this.state.tasks : tasks,
-        ...(this.askedTask && tasks.some((t) => t.name === this.askedTask) ? { selectedTaskID: tasks.find((t) => t.name === this.askedTask)!.id } : {}),
+        ...this.takeAskedTask(tasks),
         workspaces,
         models: mr.ok ? parseModels(mr.stdout) : this.state.models,
         lastRefresh: Date.now(),
@@ -258,7 +270,21 @@ class Store {
     await this.loadContexts()
   }
 
-  async openShell(t: AXTask, command?: string) {
+  /** Opens the in-app ssh terminal for a task. */
+  openShell(t: AXTask) {
+    this.set({ shellTaskID: t.id })
+  }
+
+  closeShell() {
+    this.set({ shellTaskID: null })
+  }
+
+  /** `ax ssh` arguments for a task in the current scope. */
+  sshArgs(t: AXTask, command: string[] = []): string[] {
+    return [...this.scope, 'ssh', t.name, ...(command.length ? ['--', ...command] : [])]
+  }
+
+  async openExternalShell(t: AXTask, command?: string) {
     const args = [...this.scope, 'ssh', t.name, ...(command ? ['--', 'sh', '-c', command] : [])]
     const err = await window.studio.openTerminal(`ax ssh ${t.name} (${this.state.context})`, this.state.settings.axPath, args)
     if (err) this.log(`Open shell ${t.name}`, err, false)

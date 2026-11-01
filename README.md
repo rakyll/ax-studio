@@ -8,7 +8,7 @@ and packaged as a native app for macOS, Windows and Linux.
 
 | Section | What it does |
 |---|---|
-| **Overview** | A one-line digest (task count, phase breakdown, a this-session sparkline, workspaces and models, latest activity) above the task board: kanban by phase. Drag a card to Running/Suspended to resume/suspend; the inspector shows conditions and follows the task's logs, with shell and delete. |
+| **Overview** | A one-line digest (task count, phase breakdown, a this-session sparkline, workspaces and models, latest activity) above the task board: kanban by phase. Drag a card to Running/Suspended to resume/suspend; the inspector shows conditions and follows the task's logs. Open Shell gives an in-app terminal over `ax ssh` (line mode; "Open in Terminal" for full-screen programs). |
 | **Topology** | Sources → workspaces → tasks graph; running edges animate. |
 | **Designer** | Form + live composition diagram + generated YAML (or raw edit). Templates, open/save, apply. |
 | **Clusters** | Create, inspect and delete local AX clusters on kind: each shows its Kind, Agent Substrate and AX layers. Install or reinstall AX, open a cluster in Studio, or click its terminal icon for the commands to import its kubectl context and use it with kubectl and ax. |
@@ -41,8 +41,9 @@ focus, render off-screen:
 npx electron . --section=clusters --cluster=ax-dev --delay=7000 --screenshot=docs/screenshots/clusters.png
 ```
 
-`--context=<name>` picks the AX context and `--task=<name>` opens that task's
-inspector.
+`--context=<name>` and `--atespace=<name>` pick the scope, `--task=<name>` opens
+that task's inspector, `--logs=expanded` its logs and `--shell=<command>` its
+terminal, running the command.
 
 Task logs come from the Agent Substrate worker pods in `ax-system`: the app
 follows them with `kubectl logs` and keeps the task's `guest` container lines

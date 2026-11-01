@@ -34,6 +34,18 @@ export interface StreamExit {
   status: number
 }
 
+export interface SessionRequest {
+  id: string
+  program: string
+  args: string[]
+}
+
+/** Output from an interactive session: raw chunks, prompts and partial lines included. */
+export interface SessionData {
+  id: string
+  data: string
+}
+
 export interface PlatformInfo {
   os: 'darwin' | 'win32' | 'linux' | string
   home: string
@@ -54,6 +66,16 @@ export interface StudioAPI {
   cancelStream(id: string): Promise<void>
   onStreamLine(cb: (l: StreamLine) => void): () => void
   onStreamExit(cb: (e: StreamExit) => void): () => void
+  /** Starts an interactive process with piped stdio, e.g. `ax ssh <task> -- /bin/sh -i`. */
+  startSession(req: SessionRequest): Promise<void>
+  writeSession(id: string, data: string): Promise<void>
+  /** Ctrl-C: sends SIGINT, which ax ssh forwards to the remote command. */
+  interruptSession(id: string): Promise<void>
+  /** Ctrl-D: closes stdin. */
+  endSessionInput(id: string): Promise<void>
+  closeSession(id: string): Promise<void>
+  onSessionData(cb: (d: SessionData) => void): () => void
+  onSessionExit(cb: (e: StreamExit) => void): () => void
   which(program: string): Promise<string | null>
   /** Opens `program args...` in the platform's terminal. */
   openTerminal(title: string, program: string, args: string[]): Promise<string | null>

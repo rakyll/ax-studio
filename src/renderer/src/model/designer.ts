@@ -49,7 +49,7 @@ export const uid = () => nextID++
 
 export const TEMPLATES: { id: Template; title: string; detail: string }[] = [
   { id: 'blank', title: 'Blank', detail: 'An empty task on the default runner image' },
-  { id: 'simple', title: 'Simple task', detail: 'A command with an env var, no workspace' },
+  { id: 'simple', title: 'SSH task', detail: 'A task with Debug on, ready for ax ssh' },
   { id: 'team', title: 'Team workspace', detail: 'Two repos and MCP servers feeding one task' },
 ]
 
@@ -75,7 +75,7 @@ export function template(t: Template): Draft {
     case 'blank':
       return d
     case 'simple':
-      return { ...d, name: 'simple-task', command: "sh -c 'echo $ENVIRONMENT'", env: [{ id: uid(), key: 'ENVIRONMENT', value: 'test' }] }
+      return { ...d, name: 'ssh-task', command: "sh -c 'echo $ENVIRONMENT'", env: [{ id: uid(), key: 'ENVIRONMENT', value: 'test' }] }
     case 'team':
       return {
         ...d,
