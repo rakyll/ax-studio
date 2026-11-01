@@ -63,10 +63,13 @@ export function TaskLogs({ task: t }: { task: AXTask }) {
       setStatus(e.status === 0 ? 'ended' : 'failed')
       if (e.status !== 0) setError(other || `kubectl exited with status ${e.status}`)
     })
-    const ctx = s.context === 'kube' ? '' : ` --context ${shq(s.context)}`
+    const kc = `kubectl${s.context === 'kube' ? '' : ` --context ${shq(s.context)}`}`
+    // Worker pools aren't only in ax-system, and kubectl logs can't span
+    // namespaces, so follow each namespace that has worker pods.
+    const namespaces = `$(${kc} get pods -A -l ate.dev/worker-pool -o jsonpath='{range .items[*]}{.metadata.namespace}{"\\n"}{end}' | sort -u)`
     void window.studio.stream({
       id,
-      commandLine: `kubectl${ctx} -n ax-system logs -l ate.dev/worker-pool --all-containers --prefix=false --ignore-errors -f --since=24h --tail=-1 --max-log-requests=50 2>&1`,
+      commandLine: `for ns in ${namespaces}; do ${kc} -n "$ns" logs -l ate.dev/worker-pool --all-containers --prefix=false --ignore-errors -f --since=24h --tail=-1 --max-log-requests=50 2>&1 & done; wait`,
     })
     return () => {
       offLine()
