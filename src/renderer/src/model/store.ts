@@ -167,7 +167,9 @@ class Store {
     if (r.ok) {
       contexts = parseContexts(r.stdout)
       this.set({ axConfig: true })
-    } else if (/unknown command/i.test(r.error)) {
+    } else if (/unknown command/i.test(r.stderr + r.stdout)) {
+      // This ax has no `ax config`: it follows kubectl's contexts. It prints
+      // its usage after the error, so look at all of the output.
       contexts = await kubeContexts()
       this.set({ axConfig: false })
     } else {
