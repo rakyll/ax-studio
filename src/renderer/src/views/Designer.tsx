@@ -1,12 +1,12 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   Box, Check, CircleCheck, CircleX, Copy, Cpu, Eye, EyeOff, FileCode2, FolderGit2, FolderOpen, LayoutGrid, Lock, MemoryStick,
-  Play, Plus, Save, Sparkles, TriangleAlert, Variable, X, type LucideIcon,
+  Play, Plus, RefreshCw, Save, Sparkles, TriangleAlert, Variable, X, type LucideIcon,
 } from 'lucide-react'
 import { Dropdown } from '../App'
 import { PageHeader, Segmented, Toggle } from '../components'
 import {
-  TEMPLATES, canApply, cpuString, designer, formatEnv, generate, isSecret, issues, memoryString, parseEnv, uid, useDraft,
+  TEMPLATES, canApply, cpuString, designer, formatEnv, generate, hex128, validateTaskName, isSecret, issues, memoryString, parseEnv, uid, useDraft,
   validateEnvName, type ConfigMode, type Draft, type KeyValue, type WorkspaceMode,
 } from '../model/designer'
 import { validateImage, validateLabel } from '../model/resources'
@@ -31,6 +31,8 @@ export function Designer() {
     setResult(null)
     const r = await store.apply(generate(draft))
     setResult({ ok: r.ok, text: r.ok ? r.stdout.trim() : r.error })
+    // A fresh ID so applying again creates a new task instead of colliding.
+    if (r.ok && !draft.rawMode) designer.set({ suffix: hex128() })
     setApplying(false)
   }, [applying])
 
@@ -215,7 +217,7 @@ function DesignerForm({ d }: { d: Draft }) {
       </div>
     )
   }
-  const nameErr = validateLabel(d.name)
+  const nameErr = validateTaskName(d.name)
   const atesErr = d.atespace ? validateLabel(d.atespace) : null
   const imgErr = d.image.includes('REPLACE_WITH') ? 'replace the placeholder digest' : validateImage(d.image)
 
@@ -223,7 +225,11 @@ function DesignerForm({ d }: { d: Draft }) {
     <div className="ds-form">
       <Section icon={Box} tint="var(--accent)" title="Task">
         <Field label="Name" error={nameErr}>
-          <input className={`input ${nameErr ? 'invalid' : ''}`} value={d.name} onChange={(e) => set({ name: e.target.value })} />
+          <div className="ds-row">
+            <input className={`input ${nameErr ? 'invalid' : ''}`} value={d.name} onChange={(e) => set({ name: e.target.value })} />
+            <span className="ds-suffix mono" title={`Appended to the name: -${d.suffix}`}>-{d.suffix.slice(0, 8)}…</span>
+            <button className="btn ghost small icon" title="New ID" onClick={() => set({ suffix: hex128() })}><RefreshCw size={12} /></button>
+          </div>
         </Field>
         <Field label="Atespace" error={atesErr}>
           <input className={`input ${atesErr ? 'invalid' : ''}`} value={d.atespace} placeholder={s.atespace}
