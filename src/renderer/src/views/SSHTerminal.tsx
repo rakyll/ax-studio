@@ -188,7 +188,6 @@ export function SSHTerminal({ tab, active }: { tab: SSHTab; active: boolean }) {
         <span className={`pulse ${status === 'connected' ? 'on' : ''}`}
           style={{ '--c': status === 'connected' ? 'var(--green)' : status === 'exited' ? 'var(--text-3)' : 'var(--orange)' } as CSSProperties} />
         <strong>{t.name}</strong>
-        <span className="faint mono">ax ssh · {tab.context} · {t.atespace}</span>
         <span className="spacer" />
         <button className="btn small ghost" title="Open another terminal to this task" onClick={() => store.duplicateShell(tab)}>
           <Plus size={12} /> New session
