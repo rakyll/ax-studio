@@ -488,7 +488,7 @@ function YamlPane({ d }: { d: Draft }) {
       <div className="yaml-head">
         <FileCode2 size={14} className="faint" />
         <strong>{d.rawMode ? 'Manifest' : 'Generated YAML'}</strong>
-        <span className="chip">{docs} doc{docs === 1 ? '' : 's'}</span>
+        <span className="chip">{docs} object{docs === 1 ? '' : 's'}</span>
         {d.filePath && <span className="caption faint ellipsis" title={d.filePath}>{d.filePath.split(/[\\/]/).pop()}</span>}
         <span className="spacer" />
         <label className="row caption muted" style={{ gap: 6 }}>
