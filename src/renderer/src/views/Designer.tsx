@@ -56,10 +56,7 @@ export function Designer() {
                   )}
                   <button className="menu-item" onClick={() => { designer.load(t.id); close() }}>
                     <span className="menu-check" />
-                    <span className="col">
-                      <span>{t.title}</span>
-                      <span className="caption faint">{t.detail}</span>
-                    </span>
+                    {t.title}
                   </button>
                 </Fragment>
               ))}
