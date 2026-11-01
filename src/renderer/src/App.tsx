@@ -115,7 +115,6 @@ function traySummary(): TraySummary {
   return {
     scope: `${s.context || 'No context'} · ${s.atespace}`,
     status,
-    running: s.tasks.filter((t) => t.phase === 'running').length,
     groups,
   }
 }

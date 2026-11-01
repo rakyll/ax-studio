@@ -65,7 +65,6 @@ export interface TraySummary {
   scope: string
   /** "2 running · 1 suspended", or why there's nothing to show. */
   status: string
-  running: number
   groups: { phase: string; tasks: { name: string; actions: ('resume' | 'suspend')[] }[] }[]
 }
 

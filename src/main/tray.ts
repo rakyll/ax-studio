@@ -35,7 +35,6 @@ export function updateTray(summary: TraySummary | null) {
 function render() {
   if (!tray) return
   const s = last
-  tray.setTitle(s && s.running > 0 ? String(s.running) : '', { fontType: 'monospacedDigit' })
   const items: MenuItemConstructorOptions[] = []
   if (!s) {
     items.push({ label: 'Open AX Studio to see tasks', enabled: false })
