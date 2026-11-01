@@ -55,6 +55,10 @@ swift scripts/make-icon.swift ~/ax/assets/axel.svg build-resources/icon.icns
 
 ## Clusters
 
+> [!NOTE]
+> Cluster creation is a prototype. Ideally, once AX Studio is installed on a
+> laptop, it won't need any external dependencies.
+
 Creating a cluster runs the AX repo's `hack/setup-e2e-kind.sh`, which needs
 `make`, `go` and `docker` or `podman`. The app then merges the `kind-<name>`
 context into your kubeconfig and saves a `.ax-studio.bak` backup. Reinstalling
