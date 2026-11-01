@@ -50,10 +50,10 @@ export const uid = () => nextID++
 export const TEMPLATES: { id: Template; title: string; detail: string; group?: string }[] = [
   { id: 'blank', title: 'Blank', detail: 'An empty task on the default runner image' },
   { id: 'simple', title: 'SSH task', detail: 'A task with Debug on, ready for ax ssh' },
-  { id: 'gemini', title: 'Gemini agent', detail: 'A coding agent on the Gemini API, fixing a repo', group: 'ax-images' },
-  { id: 'openai', title: 'OpenAI agent', detail: 'A coding agent on the OpenAI Responses API, fixing a repo', group: 'ax-images' },
-  { id: 'claude-managed-agents', title: 'Claude Managed Agents', detail: 'The worker of a self-hosted Managed Agents environment', group: 'ax-images' },
-  { id: 'github-actions', title: 'GitHub Actions runner', detail: 'A self-hosted runner that takes one job and exits', group: 'ax-images' },
+  { id: 'gemini', title: 'Gemini Agent', detail: 'A coding agent on the Gemini API, fixing a repo', group: 'ax-images' },
+  { id: 'openai', title: 'OpenAI Agent', detail: 'A coding agent on the OpenAI Responses API, fixing a repo', group: 'ax-images' },
+  { id: 'claude-managed-agents', title: 'Claude Agent', detail: 'The worker of a self-hosted Managed Agents environment', group: 'ax-images' },
+  { id: 'github-actions', title: 'GitHub Actions Runner', detail: 'A self-hosted runner that takes one job and exits', group: 'ax-images' },
 ]
 
 function blank(): Draft {
