@@ -18,7 +18,7 @@ and packaged as a native app for macOS, Windows and Linux.
 | | |
 |---|---|
 | ![Topology](docs/screenshots/topology.png) **Topology** | ![Designer](docs/screenshots/designer.png) **Designer** |
-| ![Clusters](docs/screenshots/clusters.png) **Clusters** | |
+| ![Clusters](docs/screenshots/clusters.png) **Clusters** | ![Task logs](docs/screenshots/logs.png) **Task logs**, expanded |
 
 The app shells out to the `ax` CLI (and `kubectl`, `make`, `go`, `podman`/`docker`
 to create clusters). It passes `--context` on every call and gives cluster setup a

@@ -72,7 +72,7 @@ class Store {
     section: [new URLSearchParams(location.search).get('section'), localStorage.getItem(SECTION_KEY)].find((x): x is Section => SECTIONS.includes(x as Section)) ?? 'overview',
     contexts: [],
     context: '',
-    atespace: 'default',
+    atespace: new URLSearchParams(location.search).get('atespace') || 'default',
     tasks: [],
     workspaces: [],
     models: [],

@@ -39,10 +39,10 @@ function createWindow() {
     return { action: 'deny' }
   })
   // `--section=clusters` opens a specific page; `--cluster=name` expands a
-  // cluster card; `--context=name` and `--task=name` open a task's inspector, and
+  // cluster card; `--context`, `--atespace` and `--task=name` open a task's inspector, and
   // `--logs=expanded` opens its logs in the large view.
   const query: Record<string, string> = {}
-  for (const k of ['section', 'cluster', 'context', 'task', 'logs']) {
+  for (const k of ['section', 'cluster', 'context', 'atespace', 'task', 'logs']) {
     const v = arg(k)
     if (v) query[k] = v
   }
