@@ -135,7 +135,7 @@ function templateDraft(t: Template): Draft {
     case 'blank':
       return d
     case 'simple':
-      return { ...d, name: 'ssh-task', command: "sh -c 'echo $ENVIRONMENT'", env: [{ id: uid(), key: 'ENVIRONMENT', value: 'test' }] }
+      return { ...d, name: 'shell-task', command: "sh -c 'echo $ENVIRONMENT'", env: [{ id: uid(), key: 'ENVIRONMENT', value: 'test' }] }
     case 'gemini':
       return agentTask(d, 'gemini', AGENT_PROMPT + `model: gemini-3.8-flash
 maxTurns: 50
