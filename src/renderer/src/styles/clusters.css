@@ -56,6 +56,7 @@
 .term-btn.btn { background: var(--console); color: #fff; border-color: transparent; }
 .term-btn.btn:hover:not(:disabled) { background: var(--console); filter: brightness(1.35); }
 .term-btn.btn.active { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.term-prompt { margin-right: 6px; opacity: 0.7; }
 .connect { display: flex; flex-direction: column; gap: 8px; padding-top: 2px; animation: fadein .2s ease-out; }
 .connect-note { font-size: 11.5px; color: var(--text-2); margin-bottom: 3px; }
 .connect-cmd {
