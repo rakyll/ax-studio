@@ -13,8 +13,6 @@ export interface ServerDraft { id: number; name: string; endpoint: string }
 export interface Draft {
   // Task
   name: string
-  /** A random 8-character hex ID appended to the task name. */
-  suffix: string
   atespace: string
   image: string
   command: string
@@ -52,17 +50,8 @@ export const uid = () => nextID++
 /** 32 random bits as 8 hex characters. */
 export const hexID = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('')
 
-/** The task's `metadata.name`: the name the user typed plus its hex ID. */
-export const taskName = (d: Draft) => `${d.name}-${d.suffix}`
-
-/** Room left for the typed name once `-<8 hex>` is appended to fit a 63-character label. */
-export const MAX_NAME = 63 - 9
-
-/** Validates the typed task name, leaving room for its hex ID. */
-export function validateTaskName(name: string): string | null {
-  if (name.length > MAX_NAME) return `at most ${MAX_NAME} characters, leaving room for the ID`
-  return validateLabel(name)
-}
+/** The name with a fresh `-<8 hex>` ID, replacing any ID it already ends with. */
+export const withID = (name: string) => `${name.replace(/-[0-9a-f]{8}$/, '')}-${hexID()}`
 
 export const TEMPLATES: { id: Template; title: string; group?: string }[] = [
   { id: 'blank', title: 'Blank' },
@@ -75,7 +64,7 @@ export const TEMPLATES: { id: Template; title: string; group?: string }[] = [
 
 function blank(): Draft {
   return {
-    name: 'my-task', suffix: hexID(), atespace: '', image: '', command: '', env: [], cpu: 1, memoryMi: 512, debug: true,
+    name: 'my-task', atespace: '', image: '', command: '', env: [], cpu: 1, memoryMi: 512, debug: true,
     configMode: 'none', customConfig: 'key: value\n',
     workspaceMode: 'none', existingWorkspace: '', wsName: 'my-workspace', repos: [], files: [], servers: [],
     includeModel: false, modelName: 'default-model', provider: 'anthropic', modelID: 'claude-opus-5-5',
@@ -134,7 +123,13 @@ function agentTask(d: Draft, name: keyof typeof IMAGE_DIGESTS, config: string, s
  * registry credentials that kind nodes and fresh machines don't have. The
  * ax-images templates use their public, digest-pinned ghcr.io images.
  */
+/** A template's draft, its task name ending in a fresh hex ID. */
 export function template(t: Template): Draft {
+  const d = templateDraft(t)
+  return { ...d, name: withID(d.name) }
+}
+
+function templateDraft(t: Template): Draft {
   const d = blank()
   switch (t) {
     case 'blank':
@@ -212,7 +207,7 @@ export function issues(d: Draft): Issue[] {
   const err = (text: string) => out.push({ severity: 'error', text })
   const warn = (text: string) => out.push({ severity: 'warning', text })
   let e: string | null
-  if ((e = validateTaskName(d.name))) err(`Task name: ${e}`)
+  if ((e = validateLabel(d.name))) err(`Task name: ${e}`)
   if (d.atespace && (e = validateLabel(d.atespace))) err(`Atespace: ${e}`)
   if ((e = validateImage(d.image))) warn(`Image: ${e}`)
   if (d.image.includes('REPLACE_WITH')) err('Image: replace the placeholder digest')
@@ -306,7 +301,7 @@ export function generate(d: Draft, redact = false): string {
     docs.push(y)
   }
 
-  let t = `apiVersion: ax.io/v1alpha1\nkind: Task\nmetadata:\n  name: ${q(taskName(d))}${ates}\nspec:`
+  let t = `apiVersion: ax.io/v1alpha1\nkind: Task\nmetadata:\n  name: ${q(d.name)}${ates}\nspec:`
   if (d.image) t += `\n  image: ${q(d.image)}`
   const argv = tokenize(d.command)
   if (argv.length) t += `\n  command: [${argv.map(q).join(', ')}]`

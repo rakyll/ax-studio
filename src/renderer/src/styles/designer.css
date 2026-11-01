@@ -26,7 +26,6 @@
 .ds-field > label { color: var(--text-2); text-align: right; padding-top: 6px; }
 .ds-row { display: flex; gap: 6px; align-items: center; }
 .ds-row .input { flex: 1; }
-.ds-suffix { flex: none; font-size: 11.5px; color: var(--text-3); }
 .ds-file { display: flex; flex-direction: column; gap: 5px; padding: 8px; border-radius: 8px; background: var(--surface-2); }
 .ds-add { align-self: flex-start; color: var(--accent); }
 .ds-error { color: var(--red); }
