@@ -194,14 +194,14 @@ const sessions = new Map<string, ChildProcess>()
  * Runs an interactive program with piped stdio. Output goes out as raw
  * chunks, since prompts don't end in a newline.
  */
-export function startSession(req: SessionRequest, onData: (data: string) => void, onExit: (status: number) => void) {
+export function startSession(req: SessionRequest, onData: (data: string, stream: 'stdout' | 'stderr') => void, onExit: (status: number) => void) {
   const program = which(req.program) ?? req.program
   const child = spawn(program, req.args, { env: { ...env, TERM: 'dumb' }, windowsHide: true })
   sessions.set(req.id, child)
-  child.stdout?.setEncoding('utf8').on('data', onData)
-  child.stderr?.setEncoding('utf8').on('data', onData)
+  child.stdout?.setEncoding('utf8').on('data', (d: string) => onData(d, 'stdout'))
+  child.stderr?.setEncoding('utf8').on('data', (d: string) => onData(d, 'stderr'))
   child.stdin?.on('error', () => {})
-  child.on('error', (e) => onData(`${req.program}: ${e.message}\n`))
+  child.on('error', (e) => onData(`${req.program}: ${e.message}\n`, 'stderr'))
   child.on('close', (code, signal) => {
     sessions.delete(req.id)
     onExit(code ?? (signal ? 130 : 1))

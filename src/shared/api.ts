@@ -44,6 +44,7 @@ export interface SessionRequest {
 export interface SessionData {
   id: string
   data: string
+  stream: 'stdout' | 'stderr'
 }
 
 export interface PlatformInfo {

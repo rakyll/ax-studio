@@ -125,7 +125,7 @@ function registerIPC() {
   ipcMain.handle('session:start', (e, req: SessionRequest) => {
     sh.startSession(
       req,
-      (data) => !e.sender.isDestroyed() && e.sender.send('session:data', { id: req.id, data }),
+      (data, stream) => !e.sender.isDestroyed() && e.sender.send('session:data', { id: req.id, data, stream }),
       (status) => !e.sender.isDestroyed() && e.sender.send('session:exit', { id: req.id, status }),
     )
   })
