@@ -233,14 +233,16 @@ class ClustersStore {
    * Runs AX's own setup script for the cluster. It creates the kind cluster if
    * needed, installs Substrate at the version AX is built against, builds and
    * deploys AX, then merges kind-<name> into your kubeconfig without changing
-   * its current context.
+   * its current context. AX_SNAPSHOTS_BUCKET is cleared so a value exported
+   * for a real cluster in the user's shell doesn't replace the script's kind
+   * default.
    */
   private setupCommand(name: string, workers: number, substrateRef: string): string {
     const tmp = `.tmp/kubeconfig-${name}`
     return [
       'set -e',
       'ORIG=${KUBECONFIG:-$HOME/.kube/config}; ORIG=${ORIG%%:*}',
-      `KUBECONFIG="$PWD/${tmp}" KIND_CLUSTER_NAME=${shq(name)} AX_WORKER_REPLICAS=${workers}` +
+      `KUBECONFIG="$PWD/${tmp}" KIND_CLUSTER_NAME=${shq(name)} AX_WORKER_REPLICAS=${workers} AX_SNAPSHOTS_BUCKET=` +
         `${substrateRef ? ` SUBSTRATE_REF=${shq(substrateRef)}` : ''} bash ${SCRIPT}`,
       `printf '\\n==> Adding context kind-%s to %s\\n' ${shq(name)} "$ORIG"`,
       mergeScript(tmp),

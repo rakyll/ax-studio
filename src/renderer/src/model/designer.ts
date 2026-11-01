@@ -53,8 +53,6 @@ export const TEMPLATES: { id: Template; title: string; detail: string }[] = [
   { id: 'team', title: 'Team workspace', detail: 'Two repos and MCP servers feeding one task' },
 ]
 
-const RUNNER = 'gcr.io/ax-substrate/ate-images/ax-task-runner@sha256:3a0dea6ad8b55278685db58aca6e37dc4ba04056831d45bef3aaeafdca43cac6'
-
 function blank(): Draft {
   return {
     name: 'my-task', atespace: '', image: '', command: '', env: [], cpu: 1, memoryMi: 512, debug: true,
@@ -66,18 +64,22 @@ function blank(): Draft {
   }
 }
 
+/**
+ * Templates leave spec.image empty so the server runs its configured runner
+ * (AX_DEFAULT_TASK_IMAGE): a pinned gcr.io image would need registry
+ * credentials that kind nodes and fresh machines don't have.
+ */
 export function template(t: Template): Draft {
   const d = blank()
   switch (t) {
     case 'blank':
       return d
     case 'simple':
-      return { ...d, name: 'simple-task', image: RUNNER, command: "sh -c 'echo $ENVIRONMENT'", env: [{ id: uid(), key: 'ENVIRONMENT', value: 'test' }] }
+      return { ...d, name: 'simple-task', command: "sh -c 'echo $ENVIRONMENT'", env: [{ id: uid(), key: 'ENVIRONMENT', value: 'test' }] }
     case 'team':
       return {
         ...d,
         name: 'fe-feature',
-        image: RUNNER,
         command: 'sleep infinity',
         cpu: 1,
         memoryMi: 1024,
