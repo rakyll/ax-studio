@@ -6,7 +6,7 @@ AX clusters. Built with Electron, React and TypeScript for macOS, Windows and Li
 ![Activity](docs/screenshots/overview.png)
 
 - **Activity:** a task board by phase. Drag cards to resume or suspend tasks,
-  inspect conditions, follow logs, and open a shell over `ax ssh`.
+  inspect conditions, follow logs, and open a terminal over `ax ssh`.
 - **Network:** a graph of sources, workspaces and tasks.
 - **Designer:** build tasks with a form or raw YAML, then apply them.
 - **Clusters:** create, inspect and delete local AX clusters on kind.
