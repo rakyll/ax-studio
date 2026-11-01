@@ -89,9 +89,10 @@ function layout(s: State) {
     y += height + GROUP_GAP
   }
 
-  const columns = 3
-  const width = COLUMN_X[columns - 1] + NODE_W / 2 + 30
-  return { nodes, edges, columns, width, height: y + 20 }
+  // Columns with no nodes (no sources) leave no gap on the left.
+  const left = nodes.length ? Math.min(...nodes.map((n) => n.x)) - NODE_W / 2 - 30 : 0
+  const width = COLUMN_X[COLUMN_X.length - 1] + NODE_W / 2 + 30 - left
+  return { nodes, edges, left, width, height: y + 20 }
 }
 
 function describe(k: Kind): { icon: LucideIcon; tint: string; title: string; subtitle: string; tooltip: string } {
@@ -162,8 +163,8 @@ export function Topology() {
             <Empty icon={Network} title="Nothing to draw yet">Create a Workspace or Task in the Designer to see it here.</Empty>
           ) : (
             <div className="topo-sizer" style={{ width: graph.width * zoom, height: graph.height * zoom }}>
-              <div className="topo-canvas" style={{ width: graph.width, height: graph.height, transform: `scale(${zoom})` }}>
-                <svg className="topo-edges" width={graph.width} height={graph.height}>
+              <div className="topo-canvas" style={{ width: graph.width, height: graph.height, transform: `scale(${zoom}) translateX(${-graph.left}px)` }}>
+                <svg className="topo-edges" width={graph.width + graph.left} height={graph.height}>
                   <g>
                     {graph.edges.map((e) => (
                       <g key={e.id} className="topo-edge" style={{ opacity: edgeLit(e) ? 1 : 0.15 }}>
