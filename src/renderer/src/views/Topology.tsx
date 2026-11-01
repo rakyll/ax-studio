@@ -198,7 +198,7 @@ export function Topology() {
         <div className="topo-scroll dotgrid" ref={scroller}
           onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest('.topo-node')) setZoom(1) }}>
           {empty ? (
-            <Empty icon={Network} title="Nothing to draw yet">Create a Workspace or Task in the Designer to see it here.</Empty>
+            <Empty icon={Network} title="Nothing to draw yet">Create a Workspace or Task in Deploy to see it here.</Empty>
           ) : (
             <div className="topo-sizer" ref={sizer} style={{ width: graph.width * zoom, height: graph.height * zoom }}>
               <div className="topo-canvas" style={{ width: graph.width, height: graph.height, transform: `scale(${zoom}) translateX(${-graph.left}px)` }}>

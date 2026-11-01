@@ -48,7 +48,7 @@ export function Designer() {
   return (
     <div className="designer">
       <div className="designer-head">
-        <PageHeader title="Designer" subtitle="Compose a task, its workspace and model, then create them.">
+        <PageHeader title="Deploy" subtitle="Compose a task, its workspace and model, then create them.">
           <div className="row">
             <Dropdown label={<><LayoutGrid size={14} />Templates</>}>
               {(close) => TEMPLATES.map((t, i) => (

@@ -88,7 +88,7 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
           <div className="card board-empty">
             <Empty icon={Rows3} title="No tasks in this atespace">
               <button className="btn small" style={{ marginTop: 8 }} onClick={() => store.setSection('designer')}>
-                <Plus size={12} /> Design a task
+                <Plus size={12} /> Deploy a task
               </button>
             </Empty>
           </div>
