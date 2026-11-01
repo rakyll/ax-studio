@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { Box, FolderGit2, FolderOpen, GitBranch, Network, Plug, type LucideIcon } from 'lucide-react'
+import { Box, FolderGit2, FolderOpen, GitBranch, Map as MapIcon, Plug, type LucideIcon } from 'lucide-react'
 import { store, useStore, type State } from '../model/store'
 import { type AXTask, type AXWorkspace, type GitRepo, type Phase, phaseColor, phaseLabel, repoName } from '../model/resources'
 import { Empty, PageHeader, PhaseIcon } from '../components'
@@ -181,7 +181,7 @@ export function Topology() {
     <div className="topology-page">
       <div className="topology">
         <div className="topology-head">
-          <PageHeader title="Network" subtitle="How sources feed workspaces and workspaces feed tasks. Running edges flow.">
+          <PageHeader title="Map" subtitle="How sources feed workspaces and workspaces feed tasks. Running edges flow.">
             <div className="row topo-legend">
               {LEGEND.map((p) => (
                 <span key={p} className="row" style={{ gap: 4 }}>
@@ -198,7 +198,7 @@ export function Topology() {
         <div className="topo-scroll dotgrid" ref={scroller}
           onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest('.topo-node')) setZoom(1) }}>
           {empty ? (
-            <Empty icon={Network} title="Nothing to draw yet">Create a Workspace or Task in the Designer to see it here.</Empty>
+            <Empty icon={MapIcon} title="Nothing to draw yet">Create a Workspace or Task in the Designer to see it here.</Empty>
           ) : (
             <div className="topo-sizer" ref={sizer} style={{ width: graph.width * zoom, height: graph.height * zoom }}>
               <div className="topo-canvas" style={{ width: graph.width, height: graph.height, transform: `scale(${zoom}) translateX(${-graph.left}px)` }}>

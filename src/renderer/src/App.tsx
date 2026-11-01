@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Boxes, Gauge, Laptop, Network, RefreshCw, Server, Settings as SettingsIcon, SquarePen, SquareTerminal, ChevronDown, Check, type LucideIcon } from 'lucide-react'
+import { Boxes, Gauge, Laptop, Map as MapIcon, RefreshCw, Server, Settings as SettingsIcon, SquarePen, SquareTerminal, ChevronDown, Check, type LucideIcon } from 'lucide-react'
 import { store, useStore, type Section } from './model/store'
 import logo from './assets/axel.svg'
 import { designer } from './model/designer'
@@ -15,7 +15,7 @@ import './styles/app.css'
 
 const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Overview' | 'Build' }[] = [
   { id: 'overview', title: 'Activity', icon: Gauge, group: 'Overview' },
-  { id: 'topology', title: 'Network', icon: Network, group: 'Overview' },
+  { id: 'topology', title: 'Map', icon: MapIcon, group: 'Overview' },
   { id: 'designer', title: 'Designer', icon: SquarePen, group: 'Build' },
   { id: 'terminal', title: 'Terminal', icon: SquareTerminal, group: 'Build' },
   { id: 'clusters', title: 'Clusters', icon: Boxes, group: 'Build' },

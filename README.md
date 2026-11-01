@@ -8,7 +8,7 @@ AX clusters. Built with Electron, React and TypeScript for macOS, Windows and Li
 - **Activity:** a sortable task table with running tasks on top, and the
   atespace's workspaces. Resume, suspend or delete tasks, inspect conditions,
   follow logs and delete workspaces.
-- **Network:** a graph of sources, workspaces and tasks.
+- **Map:** a graph of sources, workspaces and tasks.
 - **Designer:** build tasks with a form or raw YAML, then create them.
 - **Terminal:** sessions into running tasks over `ax ssh`, in tabs that stay
   connected while you use the rest of the app.
@@ -16,7 +16,7 @@ AX clusters. Built with Electron, React and TypeScript for macOS, Windows and Li
 
 | | |
 |---|---|
-| ![Network](docs/screenshots/topology.png) **Network** | ![Designer](docs/screenshots/designer.png) **Designer** |
+| ![Map](docs/screenshots/topology.png) **Map** | ![Designer](docs/screenshots/designer.png) **Designer** |
 | ![Clusters](docs/screenshots/clusters.png) **Clusters** | ![Task logs](docs/screenshots/logs.png) **Task logs** |
 
 The app calls the `ax` CLI and `kubectl`. It passes `--context` on every call,
