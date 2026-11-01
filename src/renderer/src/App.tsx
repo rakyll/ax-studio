@@ -15,8 +15,8 @@ import './styles/app.css'
 const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Overview' | 'Build' }[] = [
   { id: 'overview', title: 'Activity', icon: Gauge, group: 'Overview' },
   { id: 'topology', title: 'Network', icon: Network, group: 'Overview' },
-  { id: 'ssh', title: 'SSH', icon: SquareTerminal, group: 'Overview' },
   { id: 'designer', title: 'Designer', icon: SquarePen, group: 'Build' },
+  { id: 'ssh', title: 'SSH', icon: SquareTerminal, group: 'Build' },
   { id: 'clusters', title: 'Clusters', icon: Boxes, group: 'Build' },
 ]
 

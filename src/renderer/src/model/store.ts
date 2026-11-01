@@ -7,7 +7,7 @@ import {
 } from './resources'
 
 export type Section = 'overview' | 'topology' | 'ssh' | 'designer' | 'clusters'
-const SECTIONS: Section[] = ['overview', 'topology', 'ssh', 'designer', 'clusters']
+const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'ssh', 'clusters']
 
 export interface ActivityEntry {
   id: number
