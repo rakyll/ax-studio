@@ -1,9 +1,9 @@
 import { useEffect, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
 import {
-  Bolt, ChevronRight, CircleCheck, CircleX, Columns3, CornerDownLeft, FolderGit2, Network, Pause, Play,
+  Bolt, ChevronRight, CircleCheck, CircleX, Columns3, FolderGit2, Network, Pause, Play,
   Plus, Terminal, Trash2, X, type LucideIcon,
 } from 'lucide-react'
-import { store, useStore, type Result } from '../model/store'
+import { store, useStore } from '../model/store'
 import { type AXTask, type Condition, type Phase, PHASES, comparePhase, phaseColor, phaseLabel, shortImage } from '../model/resources'
 import { Chip, Empty, PhaseBadge, PhaseIcon, since } from '../components'
 import { TaskLogs } from './TaskLogs'
@@ -254,17 +254,7 @@ function TaskCard({ task: t, selected, dragging, onDragStart, onDragEnd, onMenu,
 
 function TaskInspector({ task: t, onDelete }: { task: AXTask; onDelete: () => void }) {
   const detail = useStore().details[t.id]
-  const [cmd, setCmd] = useState('ls -la /workspace')
-  const [running, setRunning] = useState(false)
-  const [output, setOutput] = useState<Result | null>(null)
   const [showManifest, setShowManifest] = useState(false)
-
-  const run = async () => {
-    if (!cmd.trim() || running) return
-    setRunning(true)
-    setOutput(await store.ax(['ssh', t.name, '--', 'sh', '-c', cmd]))
-    setRunning(false)
-  }
 
   const fields: [string, string | undefined][] = [
     ['Image', detail?.image],
@@ -340,32 +330,6 @@ function TaskInspector({ task: t, onDelete }: { task: AXTask; onDelete: () => vo
         <InspectorSection title="Logs">
           <TaskLogs task={t} />
         </InspectorSection>
-
-        {t.phase === 'running' && (
-          <InspectorSection title="Run in sandbox">
-            <div className="row">
-              <input
-                className="input mono"
-                style={{ flex: 1 }}
-                value={cmd}
-                placeholder="command"
-                onChange={(e) => setCmd(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && void run()}
-              />
-              <button className="btn icon" title="Run" disabled={running} onClick={() => void run()}>
-                {running ? <span className="mini-spinner" /> : <CornerDownLeft size={13} />}
-              </button>
-            </div>
-            {output && (
-              <pre className={`sandbox-output ${output.ok ? '' : 'failed'}`}>
-                {(output.stdout + output.stderr).trim() || (output.ok ? '(no output)' : `exit ${output.status}`)}
-              </pre>
-            )}
-            <button className="btn small" style={{ marginTop: 8 }} onClick={() => store.openShell(t)}>
-              <Terminal size={12} /> Open terminal
-            </button>
-          </InspectorSection>
-        )}
 
         <section className="inspector-section">
           <button className="section-toggle" onClick={() => setShowManifest(!showManifest)}>
