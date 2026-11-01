@@ -4,7 +4,7 @@ import {
   Plus, Rows3, Terminal, Trash2, X, type LucideIcon,
 } from 'lucide-react'
 import { store, useStore } from '../model/store'
-import { type AXTask, type Condition, type Phase, phaseColor, phaseLabel, shortImage } from '../model/resources'
+import { type AXTask, type AXWorkspace, type Condition, type Phase, phaseColor, phaseLabel, repoName, shortImage } from '../model/resources'
 import { Empty, PhaseBadge, PhaseIcon, since } from '../components'
 import { TaskLogs } from './TaskLogs'
 import '../styles/board.css'
@@ -123,6 +123,7 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
             </table>
           </div>
         )}
+        <WorkspaceTable />
       </div>
 
       <TaskInspectorPane />
@@ -148,6 +149,95 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
       )}
 
       {confirm && <DeleteTaskModal task={confirm} onClose={() => setConfirm(null)} />}
+    </div>
+  )
+}
+
+/** The atespace's workspaces, with what they mount and how many tasks use them. */
+function WorkspaceTable() {
+  const s = useStore()
+  const [confirm, setConfirm] = useState<AXWorkspace | null>(null)
+  const users = (w: AXWorkspace) => s.tasks.filter((t) => s.details[t.id]?.workspace === w.name)
+  const workspaces = [...s.workspaces].sort((a, b) => a.name.localeCompare(b.name))
+  return (
+    <>
+      <div className="row board-head">
+        <h2>Workspaces</h2>
+        <span className="caption faint">What tasks mount at /workspace.</span>
+      </div>
+      {workspaces.length === 0 ? (
+        <div className="card board-empty">
+          <Empty icon={FolderGit2} title="No workspaces in this atespace" />
+        </div>
+      ) : (
+        <div className="card task-table-wrap">
+          <table className="task-table">
+            <thead>
+              <tr>
+                <th className="col-name"><span className="th-label">Name</span></th>
+                <th className="col-repos"><span className="th-label">Repos</span></th>
+                <th className="col-mcp"><span className="th-label">MCP servers</span></th>
+                <th className="col-files"><span className="th-label">Files</span></th>
+                <th className="col-used"><span className="th-label">Tasks</span></th>
+                <th className="col-actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {workspaces.map((w) => {
+                const n = users(w).length
+                return (
+                  <tr key={w.id} className="task-row" style={{ '--c': 'var(--purple)' } as CSSProperties}>
+                    <td className="col-name"><span className="row task-row-ws"><FolderGit2 size={13} color="var(--purple)" /><span className="task-row-name ellipsis" title={w.name}>{w.name}</span></span></td>
+                    <td className="col-repos ellipsis" title={w.repos.map((r) => `${r.repo} (${r.branch})`).join('\n')}>
+                      {w.repos.length ? w.repos.map((r) => repoName(r.repo)).join(', ') : <span className="faint">–</span>}
+                    </td>
+                    <td className="col-mcp ellipsis" title={w.mcpServers.map((m) => `${m.name} · ${m.endpoint}`).join('\n')}>
+                      {w.mcpServers.length ? w.mcpServers.map((m) => m.name).join(', ') : <span className="faint">–</span>}
+                    </td>
+                    <td className="col-files ellipsis" title={w.files.join('\n')}>
+                      {w.files.length ? w.files.join(', ') : <span className="faint">–</span>}
+                    </td>
+                    <td className="col-used num">{n || <span className="faint">0</span>}</td>
+                    <td className="col-actions">
+                      <div className="task-row-actions">
+                        <button className="btn ghost small icon danger" title="Delete" onClick={() => setConfirm(w)}><Trash2 size={12} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {confirm && <DeleteWorkspaceModal ws={confirm} users={users(confirm)} onClose={() => setConfirm(null)} />}
+    </>
+  )
+}
+
+function DeleteWorkspaceModal({ ws, users, onClose }: { ws: AXWorkspace; users: AXTask[]; onClose: () => void }) {
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <div className="modal card fade-in" onMouseDown={(e) => e.stopPropagation()}>
+        <h3>Delete workspace “{ws.name}”?</h3>
+        <p className="muted" style={{ margin: '0 0 18px', lineHeight: 1.5 }}>
+          It's removed from <strong>{ws.atespace}</strong>. This can't be undone.
+          {users.length > 0 && <> {users.length === 1 ? 'Task' : 'Tasks'} <strong>{users.map((t) => t.name).join(', ')}</strong> {users.length === 1 ? 'uses' : 'use'} it.</>}
+        </p>
+        <div className="row" style={{ justifyContent: 'flex-end' }}>
+          <button className="btn" onClick={onClose} autoFocus>Cancel</button>
+          <button
+            className="btn primary"
+            style={{ background: 'var(--red)' }}
+            onClick={() => {
+              onClose()
+              void store.remove('workspace', ws.name)
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

@@ -5,8 +5,9 @@ AX clusters. Built with Electron, React and TypeScript for macOS, Windows and Li
 
 ![Activity](docs/screenshots/overview.png)
 
-- **Activity:** a sortable task table with running tasks on top. Resume or
-  suspend tasks, inspect conditions and follow logs.
+- **Activity:** a sortable task table with running tasks on top, and the
+  atespace's workspaces. Resume, suspend or delete tasks, inspect conditions,
+  follow logs and delete workspaces.
 - **Network:** a graph of sources, workspaces and tasks.
 - **Designer:** build tasks with a form or raw YAML, then create them.
 - **Terminal:** sessions into running tasks over `ax ssh`, in tabs that stay

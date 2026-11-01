@@ -31,6 +31,12 @@
 .col-worker { width: 110px; }
 .col-age { width: 70px; color: var(--text-2); }
 .col-actions { width: 104px; }
+.col-repos { width: 24%; }
+.col-mcp { width: 18%; }
+.col-files { width: 16%; }
+.col-used { width: 70px; color: var(--text-2); }
+.th-label { display: inline-block; padding: 9px 12px; }
+.task-table-wrap + .board-head, .board-empty + .board-head { margin-top: 18px; }
 
 .task-row { cursor: default; transition: background .1s; }
 .task-row td:first-child { box-shadow: inset 3px 0 0 var(--c); }
