@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Boxes, Gauge, Laptop, Network, RefreshCw, Server, Settings as SettingsIcon, SquarePen, ChevronDown, Check, type LucideIcon } from 'lucide-react'
+import { Boxes, Gauge, Laptop, Network, RefreshCw, Server, Settings as SettingsIcon, SquarePen, SquareTerminal, ChevronDown, Check, type LucideIcon } from 'lucide-react'
 import { store, useStore, type Section } from './model/store'
 import logo from './assets/axel.svg'
 import { designer } from './model/designer'
@@ -9,11 +9,13 @@ import { Overview } from './views/Overview'
 import { Topology } from './views/Topology'
 import { Designer } from './views/Designer'
 import { Clusters } from './views/Clusters'
+import { SSH } from './views/SSH'
 import './styles/app.css'
 
 const SECTIONS: { id: Section; title: string; icon: LucideIcon; group: 'Overview' | 'Build' }[] = [
   { id: 'overview', title: 'Activity', icon: Gauge, group: 'Overview' },
   { id: 'topology', title: 'Network', icon: Network, group: 'Overview' },
+  { id: 'ssh', title: 'SSH', icon: SquareTerminal, group: 'Overview' },
   { id: 'designer', title: 'Designer', icon: SquarePen, group: 'Build' },
   { id: 'clusters', title: 'Clusters', icon: Boxes, group: 'Build' },
 ]
@@ -47,6 +49,7 @@ export function App() {
                   <x.icon size={15} />
                   <span>{x.title}</span>
                   {x.id === 'overview' && s.tasks.length > 0 && <span className="nav-count">{s.tasks.length}</span>}
+                  {x.id === 'ssh' && s.sshTabs.length > 0 && <span className="nav-count">{s.sshTabs.length}</span>}
                 </button>
               ))}
             </div>
@@ -57,12 +60,20 @@ export function App() {
       </aside>
       <main className="main">
         <Toolbar />
-        <div className="content" key={s.section}>
-          {s.section === 'overview' && <Overview />}
-          {s.section === 'topology' && <Topology />}
-          {s.section === 'designer' && <Designer />}
-          {s.section === 'clusters' && <Clusters />}
-        </div>
+        {s.section !== 'ssh' && (
+          <div className="content" key={s.section}>
+            {s.section === 'overview' && <Overview />}
+            {s.section === 'topology' && <Topology />}
+            {s.section === 'designer' && <Designer />}
+            {s.section === 'clusters' && <Clusters />}
+          </div>
+        )}
+        {/* Kept mounted while sessions are open so they survive page switches. */}
+        {(s.section === 'ssh' || s.sshTabs.length > 0) && (
+          <div className="content" hidden={s.section !== 'ssh'}>
+            <SSH />
+          </div>
+        )}
       </main>
       {s.settingsOpen && <SettingsModal />}
     </div>

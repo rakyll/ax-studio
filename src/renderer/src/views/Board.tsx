@@ -7,7 +7,6 @@ import { store, useStore } from '../model/store'
 import { type AXTask, type Condition, type Phase, PHASES, comparePhase, phaseColor, phaseLabel, shortImage } from '../model/resources'
 import { Chip, Empty, PhaseBadge, PhaseIcon, since } from '../components'
 import { TaskLogs } from './TaskLogs'
-import { SSHTerminal } from './SSHTerminal'
 import '../styles/board.css'
 
 const ALWAYS: Phase[] = ['pending', 'running', 'suspended', 'failed']
@@ -31,7 +30,6 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
   const phases = [...new Set([...ALWAYS, ...PHASES.filter((p) => present.has(p)), ...present])].sort(comparePhase)
   const selected = s.tasks.find((t) => t.id === s.selectedTaskID) ?? null
   const draggedTask = s.tasks.find((t) => t.name === dragging)
-  const shellTask = s.tasks.find((t) => t.id === s.shellTaskID)
 
   useEffect(() => {
     if (!menu) return
@@ -156,7 +154,6 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
         </div>
       )}
 
-      {shellTask && <SSHTerminal key={shellTask.id} task={shellTask} />}
       {confirm && (
         <div className="modal-backdrop" onMouseDown={() => setConfirm(null)}>
           <div className="modal card fade-in" onMouseDown={(e) => e.stopPropagation()}>

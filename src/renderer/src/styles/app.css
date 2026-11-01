@@ -42,6 +42,7 @@ html:not([data-os='darwin']) .sidebar-top { height: 14px; }
 .toolbar-title { font-size: 15px; font-weight: 650; color: var(--text-2); display: flex; align-items: center; gap: 8px; }
 .toolbar-logo { height: 22px; width: auto; }
 .content { flex: 1; min-height: 0; position: relative; }
+.content[hidden] { display: none; }
 
 .spin { animation: spin .9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

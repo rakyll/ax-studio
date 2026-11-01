@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { ExternalLink, RotateCcw, X } from 'lucide-react'
+import { ExternalLink, Plus, RotateCcw } from 'lucide-react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
-import { store, useStore } from '../model/store'
-import type { AXTask } from '../model/resources'
+import { store, useStore, type SSHTab } from '../model/store'
 
 let sessions = 0
 
@@ -30,9 +29,14 @@ const lineOutput = (s: string) => s.replace(/^.*can't access tty; job control tu
 /** `--shell=<command>` on the command line runs a command in the first session, for screenshots. */
 let firstCommand = new URLSearchParams(location.search).get('shell')
 
-/** A terminal inside a running task, over `ax ssh`. */
-export function SSHTerminal({ task: t }: { task: AXTask }) {
+/**
+ * A terminal inside a running task, over `ax ssh`. The session keeps the
+ * context it was opened in, and stays connected while its tab is hidden.
+ */
+export function SSHTerminal({ tab, active }: { tab: SSHTab; active: boolean }) {
   const s = useStore()
+  const t = tab.task
+  const termRef = useRef<Terminal | null>(null)
   const host = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<'connecting' | 'connected' | 'exited'>('connecting')
   const [mode, setMode] = useState<'pty' | 'line' | null>(null)
@@ -54,6 +58,7 @@ export function SSHTerminal({ task: t }: { task: AXTask }) {
     const fit = new FitAddon()
     term.loadAddon(fit)
     term.open(el)
+    termRef.current = term
     fit.fit()
     term.focus()
     const { cols, rows } = term
@@ -150,6 +155,7 @@ export function SSHTerminal({ task: t }: { task: AXTask }) {
 
     // The remote size can't change after the session starts; offer a reconnect instead.
     const observer = new ResizeObserver(() => {
+      if (el.clientWidth === 0) return // hidden with its tab
       const next = fit.proposeDimensions()
       setResized(!!next && (next.cols !== cols || next.rows !== rows))
     })
@@ -158,7 +164,7 @@ export function SSHTerminal({ task: t }: { task: AXTask }) {
     void window.studio.startSession({
       id: sid,
       program: s.settings.axPath,
-      args: store.sshArgs(t, ['sh', '-c', REMOTE, 'sh', String(rows), String(cols)]),
+      args: [...tab.scope, 'ssh', t.name, '--', 'sh', '-c', REMOTE, 'sh', String(rows), String(cols)],
     })
     return () => {
       offData()
@@ -167,44 +173,50 @@ export function SSHTerminal({ task: t }: { task: AXTask }) {
       observer.disconnect()
       document.removeEventListener('copy', onCopy)
       void window.studio.closeSession(sid)
+      termRef.current = null
       term.dispose()
     }
-  }, [t.name, t.atespace, s.context, s.settings.axPath, attempt])
+  }, [t.name, tab.scope, s.settings.axPath, attempt])
+
+  useEffect(() => {
+    if (active) termRef.current?.focus()
+  }, [active])
 
   return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && store.closeShell()}>
-      <div className="card term-modal">
-        <div className="row term-title">
-          <span className={`pulse ${status === 'connected' ? 'on' : ''}`}
-            style={{ '--c': status === 'connected' ? 'var(--green)' : status === 'exited' ? 'var(--text-3)' : 'var(--orange)' } as CSSProperties} />
-          <strong>{t.name}</strong>
-          <span className="faint mono">ax ssh · {s.context}</span>
-          <span className="spacer" />
-          <button className="btn small ghost" title="Open in your terminal app" onClick={() => void store.openExternalShell(t)}>
-            <ExternalLink size={12} /> Open in Terminal
+    <div className="term-pane" hidden={!active}>
+      <div className="row term-title">
+        <span className={`pulse ${status === 'connected' ? 'on' : ''}`}
+          style={{ '--c': status === 'connected' ? 'var(--green)' : status === 'exited' ? 'var(--text-3)' : 'var(--orange)' } as CSSProperties} />
+        <strong>{t.name}</strong>
+        <span className="faint mono">ax ssh · {tab.context} · {t.atespace}</span>
+        <span className="spacer" />
+        <button className="btn small ghost" title="Open another terminal to this task" onClick={() => store.duplicateShell(tab)}>
+          <Plus size={12} /> New session
+        </button>
+        <button className="btn small ghost" title="Open in your terminal app" disabled={tab.context !== s.context}
+          onClick={() => void store.openExternalShell(t)}>
+          <ExternalLink size={12} /> Open in Terminal
+        </button>
+      </div>
+      {tab.context === s.context && s.details[t.id]?.debug === false && (
+        <div className="term-banner caption">Debug is off for this task, so ax ssh may not connect. Turn on Debug in the Designer and re-apply.</div>
+      )}
+      <div className="term-body">
+        <div ref={host} className="term-host" />
+      </div>
+      <div className="row term-foot caption faint">
+        <span>
+          {status === 'connecting' ? `Connecting to ${t.name}…`
+            : mode === 'line' ? 'Line mode: this image has no script(1) · Ctrl-C interrupt · Ctrl-D end'
+            : `${size} · bash`}
+        </span>
+        <span className="spacer" />
+        {resized && status !== 'exited' && <span>Window resized</span>}
+        {(status === 'exited' || resized) && (
+          <button className="btn small ghost" onClick={() => setAttempt((a) => a + 1)}>
+            <RotateCcw size={12} /> {status === 'exited' ? 'Reconnect' : 'Reconnect to fit'}
           </button>
-          <button className="btn icon ghost" title="Close" onClick={() => store.closeShell()}><X size={15} /></button>
-        </div>
-        {s.details[t.id]?.debug === false && (
-          <div className="term-banner caption">Debug is off for this task, so ax ssh may not connect. Turn on Debug in the Designer and re-apply.</div>
         )}
-        <div className="term-body">
-          <div ref={host} className="term-host" />
-        </div>
-        <div className="row term-foot caption faint">
-          <span>
-            {status === 'connecting' ? `Connecting to ${t.name}…`
-              : mode === 'line' ? 'Line mode: this image has no script(1) · Ctrl-C interrupt · Ctrl-D end'
-              : `${size} · bash`}
-          </span>
-          <span className="spacer" />
-          {resized && status !== 'exited' && <span>Window resized</span>}
-          {(status === 'exited' || resized) && (
-            <button className="btn small ghost" onClick={() => setAttempt((a) => a + 1)}>
-              <RotateCcw size={12} /> {status === 'exited' ? 'Reconnect' : 'Reconnect to fit'}
-            </button>
-          )}
-        </div>
       </div>
     </div>
   )
