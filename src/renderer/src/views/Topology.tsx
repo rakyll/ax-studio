@@ -158,7 +158,7 @@ export function Topology() {
 
       <div className="topo-scroll dotgrid">
         {empty ? (
-          <Empty icon={Network} title="Nothing to draw yet">Apply a Workspace or Task from the Designer to see it here.</Empty>
+          <Empty icon={Network} title="Nothing to draw yet">Create a Workspace or Task in the Designer to see it here.</Empty>
         ) : (
           <div className="topo-sizer" style={{ width: graph.width * zoom, height: (graph.height + 30) * zoom }}>
             <div className="topo-canvas" style={{ width: graph.width, height: graph.height + 30, transform: `scale(${zoom})` }}>

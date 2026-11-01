@@ -46,7 +46,7 @@ export function Designer() {
   return (
     <div className="designer">
       <div className="designer-head">
-        <PageHeader title="Designer" subtitle="Compose a task, its workspace and model, then apply.">
+        <PageHeader title="Designer" subtitle="Compose a task, its workspace and model, then create them.">
           <div className="row">
             <Dropdown label={<><LayoutGrid size={14} />Templates</>}>
               {(close) => TEMPLATES.map((t, i) => (
@@ -70,8 +70,8 @@ export function Designer() {
             <button className="btn" title="Save manifest (⌘S)" onClick={() => void designer.save()}>
               <Save size={14} />Save
             </button>
-            <button className="btn primary" disabled={!canApply(d) || applying} title="Apply (⌘↩)" onClick={() => void apply()}>
-              <Play size={13} fill="currentColor" />{applying ? 'Applying…' : 'Apply'}
+            <button className="btn primary" disabled={!canApply(d) || applying} title="Create (⌘↩)" onClick={() => void apply()}>
+              <Play size={13} fill="currentColor" />{applying ? 'Creating…' : 'Create'}
             </button>
           </div>
         </PageHeader>
@@ -529,7 +529,7 @@ function Footer({ d, result }: { d: Draft; result: ApplyResult }) {
       {result && (
         <div className={`foot-result fade-in ${result.ok ? 'ok' : 'err'}`} title={result.text}>
           {result.ok ? <CircleCheck size={14} /> : <CircleX size={14} />}
-          <span className="ellipsis selectable">{result.text || (result.ok ? 'Applied' : 'Failed')}</span>
+          <span className="ellipsis selectable">{result.text || (result.ok ? 'Created' : 'Failed')}</span>
         </div>
       )}
     </footer>

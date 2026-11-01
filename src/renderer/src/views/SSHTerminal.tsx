@@ -215,7 +215,7 @@ export function SSHTerminal({ tab, active }: { tab: SSHTab; active: boolean }) {
         </button>
       </div>
       {tab.context === s.context && s.details[t.id]?.debug === false && (
-        <div className="term-banner caption">Debug is off for this task, so ax ssh may not connect. Turn on Debug in the Designer and re-apply.</div>
+        <div className="term-banner caption">Debug is off for this task, so ax ssh may not connect. Turn on Debug in the Designer and create it again.</div>
       )}
       <div className="term-body">
         <div ref={host} className="term-host" />

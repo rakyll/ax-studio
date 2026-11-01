@@ -103,7 +103,7 @@ function buildMenu() {
       label: 'AX',
       submenu: [
         { label: 'Refresh', accelerator: 'CmdOrCtrl+R', click: () => send('refresh') },
-        { label: 'Apply Design', accelerator: 'CmdOrCtrl+Enter', click: () => send('apply') },
+        { label: 'Create Design', accelerator: 'CmdOrCtrl+Enter', click: () => send('apply') },
         { type: 'separator' },
         ...sections.map((s, i) => ({ label: titles[i], accelerator: `CmdOrCtrl+${i + 1}`, click: () => send(`section:${s}`) })),
         { type: 'separator' },
