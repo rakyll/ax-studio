@@ -1,34 +1,45 @@
-import { useEffect, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import {
-  Bolt, Check, ChevronRight, CircleCheck, CircleX, Columns3, Copy, FolderGit2, Network, Pause, Play,
-  Plus, Terminal, Trash2, X, type LucideIcon,
+  ArrowDown, ArrowUp, ArrowUpDown, Bolt, Check, ChevronRight, CircleCheck, CircleX, Copy, FolderGit2, Pause, Play,
+  Plus, Rows3, Terminal, Trash2, X, type LucideIcon,
 } from 'lucide-react'
 import { store, useStore } from '../model/store'
-import { type AXTask, type Condition, type Phase, PHASES, comparePhase, phaseColor, phaseLabel, shortImage } from '../model/resources'
-import { Chip, Empty, PhaseBadge, PhaseIcon, since } from '../components'
+import { type AXTask, type Condition, type Phase, phaseColor, phaseLabel, shortImage } from '../model/resources'
+import { Empty, PhaseBadge, PhaseIcon, since } from '../components'
 import { TaskLogs } from './TaskLogs'
 import '../styles/board.css'
 
-const ALWAYS: Phase[] = ['pending', 'running', 'suspended', 'failed']
-const DROP_TARGETS: Phase[] = ['running', 'suspended']
+/** State order for sorting: what's live first, what's finished last. */
+const STATE_ORDER: Phase[] = ['running', 'pending', 'suspended', 'failed', 'terminating', 'completed']
+const stateRank = (p: Phase) => {
+  const i = STATE_ORDER.indexOf(p)
+  return i < 0 ? STATE_ORDER.length : i
+}
+
+type SortKey = 'name' | 'state' | 'workspace' | 'image' | 'worker' | 'age'
+type Sort = { key: SortKey; dir: 1 | -1 }
+
+const COLUMNS: { key: SortKey; title: string }[] = [
+  { key: 'name', title: 'Name' },
+  { key: 'state', title: 'State' },
+  { key: 'workspace', title: 'Workspace' },
+  { key: 'image', title: 'Image' },
+  { key: 'worker', title: 'Worker IP' },
+  { key: 'age', title: 'Age' },
+]
 
 type MenuState = { task: AXTask; x: number; y: number } | null
 
 /**
- * The task board: phase columns you drag cards between, plus the inspector
- * that slides in for the selected task. `before` renders above the columns,
- * so a page can put its own header there.
+ * The task table, sortable by any column (state by default, running on top),
+ * plus the inspector that slides in for the selected task. `before` renders
+ * above the table, so a page can put its own header there.
  */
 export function TaskBoard({ before }: { before?: ReactNode }) {
   const s = useStore()
-  const [dragging, setDragging] = useState<string | null>(null)
-  const [over, setOver] = useState<Phase | null>(null)
+  const [sort, setSort] = useState<Sort>({ key: 'state', dir: 1 })
   const [menu, setMenu] = useState<MenuState>(null)
   const [confirm, setConfirm] = useState<AXTask | null>(null)
-
-  const present = new Set(s.tasks.map((t) => t.phase))
-  const phases = [...new Set([...ALWAYS, ...PHASES.filter((p) => present.has(p)), ...present])].sort(comparePhase)
-  const draggedTask = s.tasks.find((t) => t.name === dragging)
 
   useEffect(() => {
     if (!menu) return
@@ -44,18 +55,26 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
     }
   }, [menu])
 
-  const canDrop = (p: Phase) => !!draggedTask && DROP_TARGETS.includes(p) && draggedTask.phase !== p
+  const tasks = useMemo(() => {
+    const created = (t: AXTask) => Date.parse(s.details[t.id]?.createTime ?? '') || 0
+    const value = (t: AXTask): string | number => {
+      const d = s.details[t.id]
+      switch (sort.key) {
+        case 'name': return t.name
+        case 'state': return stateRank(t.phase)
+        case 'workspace': return d?.workspace ?? ''
+        case 'image': return d?.image ? shortImage(d.image) : ''
+        case 'worker': return t.workerIP ?? ''
+        // Newest first reads as "youngest age" ascending.
+        case 'age': return -created(t)
+      }
+    }
+    const cmp = (a: string | number, b: string | number) =>
+      typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b), undefined, { numeric: true })
+    return [...s.tasks].sort((a, b) => cmp(value(a), value(b)) * sort.dir || stateRank(a.phase) - stateRank(b.phase) || a.name.localeCompare(b.name))
+  }, [s.tasks, s.details, sort])
 
-  const onDrop = (p: Phase) => (e: DragEvent) => {
-    e.preventDefault()
-    const name = e.dataTransfer.getData('text/plain')
-    const t = s.tasks.find((x) => x.name === name)
-    setDragging(null)
-    setOver(null)
-    if (!t || t.phase === p) return
-    if (p === 'running') void store.resume(t)
-    else if (p === 'suspended') void store.suspend(t)
-  }
+  const onSort = (key: SortKey) => setSort((o) => ({ key, dir: o.key === key ? (-o.dir as 1 | -1) : 1 }))
 
   return (
     <div className="board-page">
@@ -63,68 +82,45 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
         {before}
         <div className="row board-head" id="task-board">
           <h2>Tasks</h2>
-          {s.tasks.length > 0 && <span className="caption faint">Drag a card onto Running or Suspended to resume or suspend it.</span>}
+          {s.tasks.length > 0 && <span className="caption faint">Click a column to sort. Right-click a task for actions.</span>}
         </div>
         {s.tasks.length === 0 ? (
           <div className="card board-empty">
-            <Empty icon={Columns3} title="No tasks in this atespace">
+            <Empty icon={Rows3} title="No tasks in this atespace">
               <button className="btn small" style={{ marginTop: 8 }} onClick={() => store.setSection('designer')}>
                 <Plus size={12} /> Design a task
               </button>
             </Empty>
           </div>
         ) : (
-          <div className="board-columns">
-            {phases.map((p) => {
-              const tasks = s.tasks.filter((t) => t.phase === p)
-              const droppable = canDrop(p)
-              return (
-                <section
-                  key={p}
-                  className={`board-col ${dragging ? (droppable ? 'can-drop' : 'no-drop') : ''} ${over === p && droppable ? 'over' : ''}`}
-                  style={{ '--c': phaseColor(p) } as CSSProperties}
-                  onDragOver={(e) => {
-                    if (!droppable) return
-                    e.preventDefault()
-                    e.dataTransfer.dropEffect = 'move'
-                    if (over !== p) setOver(p)
-                  }}
-                  onDragLeave={(e) => {
-                    if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver((o) => (o === p ? null : o))
-                  }}
-                  onDrop={onDrop(p)}
-                >
-                  <header className="board-col-head">
-                    <PhaseIcon phase={p} />
-                    <span className="board-col-title">{phaseLabel(p)}</span>
-                    <span className="board-col-count">{tasks.length}</span>
-                  </header>
-                  <div className="board-col-body">
-                    {tasks.map((t) => (
-                      <TaskCard
-                        key={t.id}
-                        task={t}
-                        selected={t.id === s.selectedTaskID}
-                        dragging={dragging === t.name}
-                        onDragStart={() => setDragging(t.name)}
-                        onDragEnd={() => { setDragging(null); setOver(null) }}
-                        onMenu={(x, y) => setMenu({ task: t, x, y })}
-                        onDelete={() => setConfirm(t)}
-                      />
-                    ))}
-                    {p === 'pending' ? (
-                      <button className="board-col-new" onClick={() => store.setSection('designer')} title="Design a new task in the Designer">
-                        <Plus size={13} />New task in Designer
+          <div className="card task-table-wrap">
+            <table className="task-table">
+              <thead>
+                <tr>
+                  {COLUMNS.map((c) => (
+                    <th key={c.key} className={`col-${c.key} ${sort.key === c.key ? 'sorted' : ''}`}
+                      aria-sort={sort.key === c.key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
+                      <button className="th-sort" onClick={() => onSort(c.key)}>
+                        {c.title}
+                        {sort.key === c.key ? (sort.dir === 1 ? <ArrowUp size={11} /> : <ArrowDown size={11} />) : <ArrowUpDown size={11} className="th-idle" />}
                       </button>
-                    ) : tasks.length === 0 && (
-                      <div className="board-col-empty">
-                        {droppable ? `Drop to ${p === 'running' ? 'resume' : 'suspend'}` : 'No tasks'}
-                      </div>
-                    )}
-                  </div>
-                </section>
-              )
-            })}
+                    </th>
+                  ))}
+                  <th className="col-actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((t) => (
+                  <TaskRow
+                    key={t.id}
+                    task={t}
+                    selected={t.id === s.selectedTaskID}
+                    onMenu={(x, y) => setMenu({ task: t, x, y })}
+                    onDelete={() => setConfirm(t)}
+                  />
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -211,54 +207,43 @@ function actionsFor(t: AXTask, onDelete: () => void): Action[] {
   return a
 }
 
-function TaskCard({ task: t, selected, dragging, onDragStart, onDragEnd, onMenu, onDelete }: {
+function TaskRow({ task: t, selected, onMenu, onDelete }: {
   task: AXTask
   selected: boolean
-  dragging: boolean
-  onDragStart: () => void
-  onDragEnd: () => void
   onMenu: (x: number, y: number) => void
   onDelete: () => void
 }) {
   const detail = useStore().details[t.id]
   return (
-    <div
-      className={`task-card card ${selected ? 'selected' : ''} ${dragging ? 'dragging' : ''}`}
+    <tr
+      className={`task-row ${selected ? 'selected' : ''}`}
       style={{ '--c': phaseColor(t.phase) } as CSSProperties}
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData('text/plain', t.name)
-        e.dataTransfer.effectAllowed = 'move'
-        onDragStart()
-      }}
-      onDragEnd={onDragEnd}
       onClick={() => store.set({ selectedTaskID: selected ? null : t.id })}
       onContextMenu={(e) => {
         e.preventDefault()
         onMenu(e.clientX, e.clientY)
       }}
     >
-      <div className="task-card-top">
-        <span className="task-card-name ellipsis" title={t.name}>{t.name}</span>
-        <div className="task-card-actions" onClick={(e) => e.stopPropagation()}>
+      <td className="col-name"><span className="task-row-name ellipsis" title={t.name}>{t.name}</span></td>
+      <td className="col-state"><PhaseBadge phase={t.phase} /></td>
+      <td className="col-workspace">
+        {detail?.workspace
+          ? <span className="row task-row-ws"><FolderGit2 size={12} color="var(--purple)" /><span className="ellipsis">{detail.workspace}</span></span>
+          : <span className="faint">empty /workspace</span>}
+      </td>
+      <td className="col-image mono ellipsis" title={detail?.image}>{detail?.image ? shortImage(detail.image) : <span className="faint">–</span>}</td>
+      <td className="col-worker mono">{t.workerIP ? t.workerIP.split(':')[0] : <span className="faint">–</span>}</td>
+      <td className="col-age num" title={detail?.createTime}>{t.age}</td>
+      <td className="col-actions">
+        <div className="task-row-actions" onClick={(e) => e.stopPropagation()}>
           {actionsFor(t, onDelete).map((a) => (
             <button key={a.label} className={`btn ghost small icon ${a.danger ? 'danger' : ''}`} title={a.label.replace('…', '')} onClick={a.run}>
               <a.icon size={12} />
             </button>
           ))}
         </div>
-      </div>
-      <div className="task-card-meta">
-        <PhaseBadge phase={t.phase} />
-        {detail?.workspace ? <Chip icon={FolderGit2} title="Workspace">{detail.workspace}</Chip> : <Chip title="No workspace">empty /workspace</Chip>}
-      </div>
-      <div className="task-card-foot">
-        {detail?.image && <span className="mono ellipsis" title={detail.image}>{shortImage(detail.image)}</span>}
-        <span className="spacer" />
-        {t.workerIP && <span className="mono" title="Worker IP"><Network size={10} /> {t.workerIP.split(':')[0]}</span>}
-        <span title="Age">{t.age}</span>
-      </div>
-    </div>
+      </td>
+    </tr>
   )
 }
 

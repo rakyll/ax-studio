@@ -6,7 +6,7 @@ import { PageHeader, PhaseIcon, since } from '../components'
 import { TaskBoard } from './Board'
 import '../styles/overview.css'
 
-/** A one-card digest of the atespace on top of the task board. */
+/** A one-card digest of the atespace on top of the task table. */
 export function Overview() {
   const s = useStore()
   const ctx = store.currentContext
@@ -22,7 +22,7 @@ export function Overview() {
   )
 }
 
-const toBoard = () => document.getElementById('task-board')?.scrollIntoView({ behavior: 'smooth' })
+const toTasks = () => document.getElementById('task-board')?.scrollIntoView({ behavior: 'smooth' })
 
 function Digest() {
   const s = useStore()
@@ -34,7 +34,7 @@ function Digest() {
   return (
     <section className="card digest">
       <div className="digest-tasks">
-        <button className="digest-total" onClick={toBoard} title="Jump to the board">
+        <button className="digest-total" onClick={toTasks} title="Jump to the tasks">
           <span className="digest-value num" key={s.tasks.length}>{s.tasks.length}</span>
           <span className="muted">{s.tasks.length === 1 ? 'task' : 'tasks'}</span>
         </button>
