@@ -33,7 +33,6 @@ const ROW_H = 76
 const GROUP_GAP = 26
 const TOP = 40
 const COLUMN_X = [130, 420, 720]
-const TITLES = ['SOURCES', 'WORKSPACES', 'TASKS']
 
 /** Horizontal-tangent cubic Bezier from the right edge of one node to the left edge of the next. */
 function curve(ax: number, ay: number, bx: number, by: number) {
@@ -160,13 +159,10 @@ export function Topology() {
         {empty ? (
           <Empty icon={Network} title="Nothing to draw yet">Create a Workspace or Task in the Designer to see it here.</Empty>
         ) : (
-          <div className="topo-sizer" style={{ width: graph.width * zoom, height: (graph.height + 30) * zoom }}>
-            <div className="topo-canvas" style={{ width: graph.width, height: graph.height + 30, transform: `scale(${zoom})` }}>
-              {TITLES.slice(0, graph.columns).map((t, i) => (
-                <div key={t} className="topo-col-title" style={{ left: COLUMN_X[i] - NODE_W / 2, width: NODE_W }}>{t}</div>
-              ))}
-              <svg className="topo-edges" width={graph.width} height={graph.height + 30}>
-                <g transform="translate(0,30)">
+          <div className="topo-sizer" style={{ width: graph.width * zoom, height: graph.height * zoom }}>
+            <div className="topo-canvas" style={{ width: graph.width, height: graph.height, transform: `scale(${zoom})` }}>
+              <svg className="topo-edges" width={graph.width} height={graph.height}>
+                <g>
                   {graph.edges.map((e) => (
                     <g key={e.id} className="topo-edge" style={{ opacity: edgeLit(e) ? 1 : 0.15 }}>
                       <path d={e.d} fill="none" stroke={e.color} strokeOpacity={e.color === 'var(--purple)' ? 0.55 : 0.8}
@@ -189,7 +185,7 @@ export function Topology() {
                     className={`topo-node card ${task ? 'clickable' : ''} ${hover === n.id ? 'hovered' : ''}`}
                     title={d.tooltip}
                     style={{
-                      left: n.x - NODE_W / 2, top: n.y - NODE_H / 2 + 30, width: NODE_W, height: NODE_H,
+                      left: n.x - NODE_W / 2, top: n.y - NODE_H / 2, width: NODE_W, height: NODE_H,
                       opacity: !lit || lit.has(n.id) ? 1 : 0.25, '--tint': d.tint,
                     } as CSSProperties}
                     onMouseEnter={() => setHover(n.id)}

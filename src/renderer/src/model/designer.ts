@@ -3,7 +3,7 @@ import { validateImage, validateLabel } from './resources'
 
 export type WorkspaceMode = 'none' | 'existing' | 'new'
 export type ConfigMode = 'none' | 'custom'
-export type Template = 'blank' | 'simple' | 'team' | 'gemini' | 'openai' | 'claude-managed-agents' | 'github-actions'
+export type Template = 'blank' | 'simple' | 'gemini' | 'openai' | 'claude-managed-agents' | 'github-actions'
 
 export interface KeyValue { id: number; key: string; value: string }
 export interface RepoDraft { id: number; name: string; repo: string; branch: string }
@@ -50,7 +50,6 @@ export const uid = () => nextID++
 export const TEMPLATES: { id: Template; title: string; detail: string; group?: string }[] = [
   { id: 'blank', title: 'Blank', detail: 'An empty task on the default runner image' },
   { id: 'simple', title: 'SSH task', detail: 'A task with Debug on, ready for ax ssh' },
-  { id: 'team', title: 'Team workspace', detail: 'Two repos and MCP servers feeding one task' },
   { id: 'gemini', title: 'Gemini agent', detail: 'A coding agent on the Gemini API, fixing a repo', group: 'ax-images' },
   { id: 'openai', title: 'OpenAI agent', detail: 'A coding agent on the OpenAI Responses API, fixing a repo', group: 'ax-images' },
   { id: 'claude-managed-agents', title: 'Claude Managed Agents', detail: 'The worker of a self-hosted Managed Agents environment', group: 'ax-images' },
@@ -125,27 +124,6 @@ export function template(t: Template): Draft {
       return d
     case 'simple':
       return { ...d, name: 'ssh-task', command: "sh -c 'echo $ENVIRONMENT'", env: [{ id: uid(), key: 'ENVIRONMENT', value: 'test' }] }
-    case 'team':
-      return {
-        ...d,
-        name: 'fe-feature',
-        command: 'sleep infinity',
-        cpu: 1,
-        memoryMi: 1024,
-        env: [{ id: uid(), key: 'GOAL', value: 'ship the new settings page' }],
-        workspaceMode: 'new',
-        wsName: 'web-team',
-        repos: [
-          { id: uid(), name: 'app', repo: 'https://github.com/vitejs/vite-plugin-react.git', branch: 'main' },
-          { id: uid(), name: 'design-system', repo: 'https://github.com/primer/css.git', branch: 'main' },
-        ],
-        servers: [
-          { id: uid(), name: 'github', endpoint: 'https://api.githubcopilot.com/mcp/' },
-          { id: uid(), name: 'linear', endpoint: 'https://mcp.linear.app/sse' },
-        ],
-        includeModel: true,
-        modelName: 'claude-opus',
-      }
     case 'gemini':
       return agentTask(d, 'gemini', AGENT_PROMPT + `model: gemini-3.8-flash
 maxTurns: 50

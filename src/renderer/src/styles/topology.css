@@ -7,11 +7,6 @@
 .topo-sizer { position: relative; margin: 8px 0 24px 8px; }
 .topo-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 
-.topo-col-title {
-  position: absolute; top: 4px; text-align: center;
-  font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: var(--text-3);
-}
-
 .topo-edges { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
 .topo-edge { transition: opacity .18s ease; }
 .topo-edge path { transition: stroke-width .18s ease; }
