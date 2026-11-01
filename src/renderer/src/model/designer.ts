@@ -55,7 +55,7 @@ export const withID = (name: string) => `${name.replace(/-[0-9a-f]{8}$/, '')}-${
 
 export const TEMPLATES: { id: Template; title: string; group?: string }[] = [
   { id: 'blank', title: 'Blank' },
-  { id: 'simple', title: 'Shell task' },
+  { id: 'simple', title: 'Shell' },
   { id: 'gemini', title: 'Gemini Agent', group: 'ax-images' },
   { id: 'openai', title: 'OpenAI Agent', group: 'ax-images' },
   { id: 'claude-managed-agents', title: 'Claude Agent', group: 'ax-images' },
