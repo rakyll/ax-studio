@@ -103,13 +103,13 @@ function agentTask(d: Draft, name: keyof typeof IMAGE_DIGESTS, config: string, s
     customConfig: config,
     env: secrets.map((key) => ({ id: uid(), key, value: '' })),
     workspaceMode: 'new',
-    wsName: `itsdangerous-${name}`,
-    repos: [{ id: uid(), name: 'origin', repo: 'https://github.com/pallets/itsdangerous.git', branch: 'main' }],
+    wsName: `humanize-${name}`,
+    repos: [{ id: uid(), name: 'origin', repo: 'https://github.com/python-humanize/humanize.git', branch: 'main' }],
     files: [{
       id: uid(),
       path: 'AGENTS.md',
       content: `# Working in this repo
-- Pure-Python library. Install with \`pip install -e . pytest\`, test with \`pytest\`.
+- Pure-Python library. Install with \`pip install -e ".[tests]"\`, test with \`pytest\`.
 - Keep changes small and focused; do not add runtime dependencies.
 - Do not push or open pull requests. Leave changes in the working tree.
 `,
