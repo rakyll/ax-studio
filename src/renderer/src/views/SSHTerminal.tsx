@@ -29,6 +29,14 @@ const lineOutput = (s: string) => s.replace(/^.*can't access tty; job control tu
 /** Quotes a word for a POSIX shell when it needs it. */
 const shq = (s: string) => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`)
 
+/**
+ * The ax ssh command for a terminal app. As in the app, the shell runs under
+ * script(1) for a terminal of its own, sized to the window; the local terminal
+ * is raw meanwhile so keys like Ctrl-C and Tab reach it, and reset after.
+ */
+const externalCommand = (ssh: string) =>
+  `stty raw -echo; ${ssh} -- sh -c 'command -v script >/dev/null || exec sh -i; exec env TERM=xterm-256color script -qefc "stty rows $0 cols $1; command -v bash >/dev/null && exec bash -i; exec sh -i" /dev/null' "$(tput lines)" "$(tput cols)"; stty sane`
+
 /** `--shell=<command>` on the command line runs a command in the first session, for screenshots. */
 let firstCommand = new URLSearchParams(location.search).get('shell')
 
@@ -49,7 +57,7 @@ export function SSHTerminal({ tab, active }: { tab: SSHTab; active: boolean }) {
   const [copied, setCopied] = useState(false)
   const copyCommand = () => {
     const argv = [s.settings.axPath, ...tab.scope, 'ssh', t.name]
-    void navigator.clipboard.writeText(argv.map(shq).join(' '))
+    void navigator.clipboard.writeText(externalCommand(argv.map(shq).join(' ')))
     setCopied(true)
     setTimeout(() => setCopied(false), 1400)
   }
@@ -202,7 +210,7 @@ export function SSHTerminal({ tab, active }: { tab: SSHTab; active: boolean }) {
         <button className="btn small ghost" title="Open another terminal to this task" onClick={() => store.duplicateShell(tab)}>
           <Plus size={12} /> New session
         </button>
-        <button className="btn small ghost" title="Copy the ax ssh command for this task" onClick={copyCommand}>
+        <button className="btn small ghost" title="Copy an ax ssh command for your terminal app, with a full terminal" onClick={copyCommand}>
           {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy ax ssh</>}
         </button>
       </div>
