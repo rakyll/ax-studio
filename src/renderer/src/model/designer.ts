@@ -3,7 +3,7 @@ import { validateImage, validateLabel } from './resources'
 
 export type WorkspaceMode = 'none' | 'existing' | 'new'
 export type ConfigMode = 'none' | 'custom'
-export type Template = 'blank' | 'simple' | 'team'
+export type Template = 'blank' | 'simple' | 'team' | 'gemini' | 'openai' | 'claude-managed-agents' | 'github-actions'
 
 export interface KeyValue { id: number; key: string; value: string }
 export interface RepoDraft { id: number; name: string; repo: string; branch: string }
@@ -47,10 +47,14 @@ export interface Draft {
 let nextID = 1
 export const uid = () => nextID++
 
-export const TEMPLATES: { id: Template; title: string; detail: string }[] = [
+export const TEMPLATES: { id: Template; title: string; detail: string; group?: string }[] = [
   { id: 'blank', title: 'Blank', detail: 'An empty task on the default runner image' },
   { id: 'simple', title: 'SSH task', detail: 'A task with Debug on, ready for ax ssh' },
   { id: 'team', title: 'Team workspace', detail: 'Two repos and MCP servers feeding one task' },
+  { id: 'gemini', title: 'Gemini agent', detail: 'A coding agent on the Gemini API, fixing a repo', group: 'ax-images' },
+  { id: 'openai', title: 'OpenAI agent', detail: 'A coding agent on the OpenAI Responses API, fixing a repo', group: 'ax-images' },
+  { id: 'claude-managed-agents', title: 'Claude Managed Agents', detail: 'The worker of a self-hosted Managed Agents environment', group: 'ax-images' },
+  { id: 'github-actions', title: 'GitHub Actions runner', detail: 'A self-hosted runner that takes one job and exits', group: 'ax-images' },
 ]
 
 function blank(): Draft {
@@ -64,10 +68,55 @@ function blank(): Draft {
   }
 }
 
+/** Images and digests from github.com/rakyll/ax-images v0.3.1. */
+const AX_IMAGES = 'ghcr.io/rakyll/ax-images'
+const IMAGE_DIGESTS = {
+  gemini: 'sha256:e3d8d953fc1ca112e3b0d00a655d82008996a328a5e8dbd1777f68f492fb91bc',
+  openai: 'sha256:9eeeb86183c1514ca4e3da8f412c2f704a457be13ba9797ebb1d942ba89417c1',
+  'claude-managed-agents': 'sha256:af84c607dd0b2870046d0e5617ccebc4188f54f24ed2aab8d52e14e4554d83f3',
+  'github-actions': 'sha256:1f5b1798b306e4214e77cf655afbc5a339c5b4b15c9ee4aebc04142d737e60eb',
+}
+const image = (name: keyof typeof IMAGE_DIGESTS) => `${AX_IMAGES}/${name}@${IMAGE_DIGESTS[name]}`
+
+const AGENT_PROMPT = `prompt: |
+  Read the repository, install it with its test dependencies, and run the
+  test suite. Fix any failing or flaky tests you find. If everything passes,
+  make one small, clearly correct improvement to the README. Finish by
+  writing a short markdown report of what you checked and what you changed
+  to /workspace/agent-output.md.
+`
+
+/** The ax-images coding agents work on a small Python library. */
+function agentTask(d: Draft, name: keyof typeof IMAGE_DIGESTS, config: string, secrets: string[]): Draft {
+  return {
+    ...d,
+    name,
+    image: image(name),
+    cpu: 2,
+    memoryMi: 4096,
+    configMode: 'custom',
+    customConfig: config,
+    env: secrets.map((key) => ({ id: uid(), key, value: '' })),
+    workspaceMode: 'new',
+    wsName: `itsdangerous-${name}`,
+    repos: [{ id: uid(), name: 'origin', repo: 'https://github.com/pallets/itsdangerous.git', branch: 'main' }],
+    files: [{
+      id: uid(),
+      path: 'AGENTS.md',
+      content: `# Working in this repo
+- Pure-Python library. Install with \`pip install -e . pytest\`, test with \`pytest\`.
+- Keep changes small and focused; do not add runtime dependencies.
+- Do not push or open pull requests. Leave changes in the working tree.
+`,
+    }],
+  }
+}
+
 /**
- * Templates leave spec.image empty so the server runs its configured runner
- * (AX_DEFAULT_TASK_IMAGE): a pinned gcr.io image would need registry
- * credentials that kind nodes and fresh machines don't have.
+ * The built-in templates leave spec.image empty so the server runs its
+ * configured runner (AX_DEFAULT_TASK_IMAGE): a pinned gcr.io image would need
+ * registry credentials that kind nodes and fresh machines don't have. The
+ * ax-images templates use their public, digest-pinned ghcr.io images.
  */
 export function template(t: Template): Draft {
   const d = blank()
@@ -96,6 +145,37 @@ export function template(t: Template): Draft {
         ],
         includeModel: true,
         modelName: 'claude-opus',
+      }
+    case 'gemini':
+      return agentTask(d, 'gemini', AGENT_PROMPT + `model: gemini-3.8-flash
+maxTurns: 50
+builtinTools: ["google_search", "url_context"]
+`, ['GEMINI_API_KEY'])
+    case 'openai':
+      return agentTask(d, 'openai', AGENT_PROMPT + `model: gpt-5.5
+maxTurns: 50
+builtinTools: ["web_search"]
+`, ['OPENAI_API_KEY'])
+    case 'claude-managed-agents':
+      // The agent's model, system prompt and tools live on the Claude Platform.
+      return agentTask(d, 'claude-managed-agents', `environment: "env_..."
+agent: "agent_..."
+` + AGENT_PROMPT, ['ANTHROPIC_API_KEY', 'ANTHROPIC_ENVIRONMENT_KEY'])
+    case 'github-actions':
+      // Each job checks out its own code, so there's no workspace.
+      return {
+        ...d,
+        name: 'github-actions',
+        image: image('github-actions'),
+        cpu: 2,
+        memoryMi: 4096,
+        debug: false,
+        configMode: 'custom',
+        customConfig: `repository: "<owner>/<repo>"
+labels: ["self-hosted", "ax"]
+jobs: 1
+`,
+        env: [{ id: uid(), key: 'GITHUB_TOKEN', value: '' }],
       }
   }
 }

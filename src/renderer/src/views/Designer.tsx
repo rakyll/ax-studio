@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   Box, Check, CircleCheck, CircleX, Copy, Cpu, FileCode2, FolderGit2, FolderOpen, LayoutGrid, MemoryStick, Play,
   Plus, Save, Sparkles, TriangleAlert, X, type LucideIcon,
@@ -49,14 +49,19 @@ export function Designer() {
         <PageHeader title="Designer" subtitle="Compose a task, its workspace and model, then apply.">
           <div className="row">
             <Dropdown label={<><LayoutGrid size={14} />Templates</>}>
-              {(close) => TEMPLATES.map((t) => (
-                <button key={t.id} className="menu-item" onClick={() => { designer.load(t.id); close() }}>
-                  <span className="menu-check" />
-                  <span className="col">
-                    <span>{t.title}</span>
-                    <span className="caption faint">{t.detail}</span>
-                  </span>
-                </button>
+              {(close) => TEMPLATES.map((t, i) => (
+                <Fragment key={t.id}>
+                  {t.group && t.group !== TEMPLATES[i - 1].group && (
+                    <><div className="menu-sep" /><div className="menu-heading caption faint">{t.group}</div></>
+                  )}
+                  <button className="menu-item" onClick={() => { designer.load(t.id); close() }}>
+                    <span className="menu-check" />
+                    <span className="col">
+                      <span>{t.title}</span>
+                      <span className="caption faint">{t.detail}</span>
+                    </span>
+                  </button>
+                </Fragment>
               ))}
             </Dropdown>
             <button className="btn" title="Open manifest (⌘O)" onClick={() => void designer.open(s.settings.repoPath)}>
