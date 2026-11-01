@@ -26,6 +26,8 @@ export function Clusters() {
   const running = c.op?.status === 'running'
   const problems = clusters.problems
   const [selected, setSelected] = useState<string | null>(new URLSearchParams(location.search).get('cluster'))
+  const [outputOpen, setOutputOpen] = useState(false)
+  useEffect(() => { if (running) setOutputOpen(true) }, [running])
 
   return (
     <div className="clusters">
@@ -63,6 +65,8 @@ export function Clusters() {
         onClear={() => clusters.set({ log: [] })}
         clearDisabled={running}
         empty="Create a cluster, or install AX on an existing one."
+        open={outputOpen}
+        onToggle={() => setOutputOpen(!outputOpen)}
       />
     </div>
   )

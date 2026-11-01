@@ -1,5 +1,5 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
-import { CircleCheck, CirclePause, CirclePlay, CircleHelp, Hourglass, OctagonX, Terminal, Trash2, type LucideIcon } from 'lucide-react'
+import { ChevronDown, ChevronUp, CircleCheck, CirclePause, CirclePlay, CircleHelp, Hourglass, OctagonX, Terminal, Trash2, type LucideIcon } from 'lucide-react'
 import { type Phase, phaseColor, phaseLabel } from './model/resources'
 
 const PHASE_ICON: Record<string, LucideIcon> = {
@@ -94,31 +94,36 @@ export interface ConsoleLine {
 }
 
 /** A dark, auto-scrolling log pane for streamed command output. */
-export function LogConsole({ lines, chip, onClear, clearDisabled, empty }: {
+export function LogConsole({ lines, chip, onClear, clearDisabled, empty, open = true, onToggle }: {
   lines: ConsoleLine[]
   chip?: ReactNode
   onClear: () => void
   clearDisabled?: boolean
   empty: ReactNode
+  open?: boolean
+  onToggle?: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const stick = useRef(true)
 
   useEffect(() => {
     if (stick.current && ref.current) ref.current.scrollTop = ref.current.scrollHeight
-  }, [lines.length])
+  }, [lines.length, open])
 
+  const Chevron = open ? ChevronDown : ChevronUp
   return (
-    <div className="console">
-      <div className="row console-bar">
+    <div className={`console ${open ? '' : 'collapsed'}`}>
+      <div className={`row console-bar ${onToggle ? 'collapsible' : ''}`} onClick={onToggle}
+        title={onToggle ? (open ? 'Collapse output' : 'Expand output') : undefined}>
         <Terminal size={13} />
         <span>Output</span>
         {chip}
         <div className="spacer" />
         <span className="faint">{lines.length} lines</span>
-        <button className="btn small ghost" onClick={onClear} disabled={clearDisabled}>Clear</button>
+        <button className="btn small ghost" onClick={(e) => { e.stopPropagation(); onClear() }} disabled={clearDisabled}>Clear</button>
+        {onToggle && <Chevron size={14} />}
       </div>
-      <div
+      {open && <div
         className="console-body selectable"
         ref={ref}
         onScroll={(e) => {
@@ -133,7 +138,7 @@ export function LogConsole({ lines, chip, onClear, clearDisabled, empty }: {
             <div key={l.id} className={`console-line ${l.header ?? ''}`}>{l.text || ' '}</div>
           ))
         )}
-      </div>
+      </div>}
     </div>
   )
 }

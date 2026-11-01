@@ -10,6 +10,8 @@
 .problem-line { color: var(--warn); margin-top: 6px; gap: 6px; }
 
 .console { flex: 1; min-height: 160px; display: flex; flex-direction: column; background: var(--console); color: var(--console-text); }
+.console.collapsed { flex: 0 0 auto; min-height: 0; margin-top: auto; }
+.console-bar.collapsible { cursor: pointer; }
 .console-bar { padding: 7px 14px; gap: 7px; font-size: 12px; color: #a9a9ae; border-bottom: 1px solid rgba(255,255,255,.07); }
 .console-bar .btn.ghost { color: #a9a9ae; }
 .console-bar .btn.ghost:hover:not(:disabled) { background: rgba(255,255,255,.08); }
