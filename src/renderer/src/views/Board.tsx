@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type DragEvent, type ReactNode } from 'react'
 import {
-  Bolt, ChevronRight, CircleCheck, CircleX, Columns3, FolderGit2, Network, Pause, Play,
+  Bolt, Check, ChevronRight, CircleCheck, CircleX, Columns3, Copy, FolderGit2, Network, Pause, Play,
   Plus, Terminal, Trash2, X, type LucideIcon,
 } from 'lucide-react'
 import { store, useStore } from '../model/store'
@@ -255,6 +255,14 @@ function TaskCard({ task: t, selected, dragging, onDragStart, onDragEnd, onMenu,
 function TaskInspector({ task: t, onDelete }: { task: AXTask; onDelete: () => void }) {
   const detail = useStore().details[t.id]
   const [showManifest, setShowManifest] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const copyManifest = async () => {
+    if (!detail?.manifest) return
+    await navigator.clipboard.writeText(detail.manifest)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1400)
+  }
 
   const fields: [string, string | undefined][] = [
     ['Image', detail?.image],
@@ -332,10 +340,16 @@ function TaskInspector({ task: t, onDelete }: { task: AXTask; onDelete: () => vo
         </InspectorSection>
 
         <section className="inspector-section">
-          <button className="section-toggle" onClick={() => setShowManifest(!showManifest)}>
-            <ChevronRight size={13} className={showManifest ? 'rot' : ''} />
-            Manifest
-          </button>
+          <div className="row">
+            <button className="section-toggle" onClick={() => setShowManifest(!showManifest)}>
+              <ChevronRight size={13} className={showManifest ? 'rot' : ''} />
+              Manifest
+            </button>
+            <span className="spacer" />
+            <button className="btn small ghost" disabled={!detail?.manifest} title="Copy the manifest as YAML" onClick={copyManifest}>
+              {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
           {showManifest && <pre className="manifest selectable">{detail?.manifest || 'loading…'}</pre>}
         </section>
       </div>
