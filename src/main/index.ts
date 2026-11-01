@@ -3,10 +3,15 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import * as sh from './shell'
-import type { RunRequest, SessionRequest, StreamRequest } from '../shared/api'
+import { createTray, updateTray } from './tray'
+import type { RunRequest, SessionRequest, StreamRequest, TraySummary } from '../shared/api'
 
 const isMac = process.platform === 'darwin'
 let win: BrowserWindow | null = null
+/** Whether the window's page is up and listening for menu actions. */
+let rendererReady = false
+/** Menu bar actions waiting for the window to load. */
+let pending: string[] = []
 
 const arg = (name: string) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
 // `--screenshot=out.png` renders off-screen, saves the page and quits; it never takes focus.
@@ -30,6 +35,11 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: true,
     },
+  })
+  rendererReady = false
+  win.on('closed', () => {
+    win = null
+    updateTray(null)
   })
   if (screenshot) win.webContents.once('did-finish-load', () => setTimeout(() => void capture(screenshot), Number(arg('delay') ?? 6000)))
   else win.once('ready-to-show', () => win?.show())
@@ -60,6 +70,17 @@ async function capture(file: string) {
 
 function send(action: string) {
   win?.webContents.send('menu', action)
+}
+
+/** Runs a menu bar action in the window, opening it if it was closed. */
+function act(action: string, show = true) {
+  if (!win) createWindow()
+  if (rendererReady) send(action)
+  else pending.push(action)
+  if (!show) return
+  if (win!.isMinimized()) win!.restore()
+  win!.show()
+  app.focus({ steal: true })
 }
 
 function buildMenu() {
@@ -107,6 +128,14 @@ function buildMenu() {
 }
 
 function registerIPC() {
+  // The page sends a summary whenever its tasks change; the first one also
+  // says it's ready for actions queued while it loaded.
+  ipcMain.on('tray:update', (_e, summary: TraySummary) => {
+    updateTray(summary)
+    rendererReady = true
+    for (const a of pending) send(a)
+    pending = []
+  })
   ipcMain.handle('platform', () => ({
     os: process.platform,
     home: homedir(),
@@ -163,6 +192,7 @@ app.whenReady().then(() => {
   registerIPC()
   buildMenu()
   createWindow()
+  if (isMac && !screenshot) createTray({ act, quit: () => app.quit() })
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

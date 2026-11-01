@@ -3,7 +3,8 @@ import { Boxes, Gauge, Laptop, Network, RefreshCw, Server, Settings as SettingsI
 import { store, useStore, type Section } from './model/store'
 import logo from './assets/axel.svg'
 import { designer } from './model/designer'
-import { type AXContext, shortName } from './model/resources'
+import { type AXContext, comparePhase, phaseLabel, shortName } from './model/resources'
+import type { TraySummary } from '@shared/api'
 import { PulseDot } from './components'
 import { Overview } from './views/Overview'
 import { Topology } from './views/Topology'
@@ -33,7 +34,23 @@ export function App() {
       else if (action === 'open-manifest') { void designer.open(store.state.settings.repoPath); store.setSection('designer') }
       else if (action === 'save-manifest') void designer.save()
       else if (action === 'apply') window.dispatchEvent(new Event('ax:apply'))
+      else if (action.startsWith('tray:')) trayAction(action)
     })
+  }, [])
+
+  // Keep the menu bar icon in step with the Activity page.
+  useEffect(() => {
+    let sent = ''
+    const update = () => {
+      const summary = traySummary()
+      const json = JSON.stringify(summary)
+      if (json === sent) return
+      sent = json
+      window.studio.updateTray(summary)
+    }
+    update()
+    const off = store.subscribe(update)
+    return () => void off()
   }, [])
 
   return (
@@ -78,6 +95,41 @@ export function App() {
       {s.settingsOpen && <SettingsModal />}
     </div>
   )
+}
+
+function traySummary(): TraySummary {
+  const s = store.state
+  const phases = [...new Set(s.tasks.map((t) => t.phase))].sort(comparePhase)
+  const groups = phases.map((p) => ({
+    phase: phaseLabel(p),
+    tasks: s.tasks.filter((t) => t.phase === p).map((t) => ({
+      name: t.name,
+      actions: (t.phase === 'running' || t.phase === 'pending' ? ['suspend']
+        : t.phase === 'suspended' || t.phase === 'failed' || t.phase === 'completed' ? ['resume'] : []) as ('resume' | 'suspend')[],
+    })),
+  }))
+  const status = s.connectionError ? 'Not connected'
+    : !s.lastRefresh ? 'Loading…'
+    : groups.length === 0 ? 'No tasks'
+    : groups.map((g) => `${g.tasks.length} ${g.phase.toLowerCase()}`).join(' · ')
+  return {
+    scope: `${s.context || 'No context'} · ${s.atespace}`,
+    status,
+    running: s.tasks.filter((t) => t.phase === 'running').length,
+    groups,
+  }
+}
+
+/** `tray:show:<task>`, `tray:resume:<task>` and `tray:suspend:<task>` from the menu bar icon. */
+function trayAction(action: string) {
+  const [, verb, name] = action.split(':')
+  const t = store.state.tasks.find((x) => x.name === name)
+  if (!t) return
+  if (verb === 'show') {
+    store.set({ selectedTaskID: t.id })
+    store.setSection('overview')
+  } else if (verb === 'resume') void store.resume(t)
+  else if (verb === 'suspend') void store.suspend(t)
 }
 
 const contextIcon = (c?: AXContext) => (c?.name === 'local' ? Laptop : Server)
