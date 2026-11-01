@@ -6,8 +6,8 @@ import {
   parseWorkspaceYAML, parseWorkspaces,
 } from './resources'
 
-export type Section = 'overview' | 'topology' | 'orbit' | 'shell' | 'designer' | 'clusters'
-const SECTIONS: Section[] = ['overview', 'topology', 'orbit', 'designer', 'shell', 'clusters']
+export type Section = 'overview' | 'topology' | 'shell' | 'designer' | 'clusters'
+const SECTIONS: Section[] = ['overview', 'topology', 'designer', 'shell', 'clusters']
 
 export interface ActivityEntry {
   id: number
