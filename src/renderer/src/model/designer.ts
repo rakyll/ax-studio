@@ -13,7 +13,7 @@ export interface ServerDraft { id: number; name: string; endpoint: string }
 export interface Draft {
   // Task
   name: string
-  /** A random 128-bit hex ID appended to the task name. */
+  /** A random 8-character hex ID appended to the task name. */
   suffix: string
   atespace: string
   image: string
@@ -49,14 +49,14 @@ export interface Draft {
 let nextID = 1
 export const uid = () => nextID++
 
-/** 128 random bits as 32 hex characters. */
-export const hex128 = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('')
+/** 32 random bits as 8 hex characters. */
+export const hexID = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('')
 
 /** The task's `metadata.name`: the name the user typed plus its hex ID. */
 export const taskName = (d: Draft) => `${d.name}-${d.suffix}`
 
-/** Room left for the typed name once `-<32 hex>` is appended to fit a 63-character label. */
-export const MAX_NAME = 63 - 33
+/** Room left for the typed name once `-<8 hex>` is appended to fit a 63-character label. */
+export const MAX_NAME = 63 - 9
 
 /** Validates the typed task name, leaving room for its hex ID. */
 export function validateTaskName(name: string): string | null {
@@ -75,7 +75,7 @@ export const TEMPLATES: { id: Template; title: string; group?: string }[] = [
 
 function blank(): Draft {
   return {
-    name: 'my-task', suffix: hex128(), atespace: '', image: '', command: '', env: [], cpu: 1, memoryMi: 512, debug: true,
+    name: 'my-task', suffix: hexID(), atespace: '', image: '', command: '', env: [], cpu: 1, memoryMi: 512, debug: true,
     configMode: 'none', customConfig: 'key: value\n',
     workspaceMode: 'none', existingWorkspace: '', wsName: 'my-workspace', repos: [], files: [], servers: [],
     includeModel: false, modelName: 'default-model', provider: 'anthropic', modelID: 'claude-opus-5-5',
