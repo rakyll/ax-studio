@@ -28,7 +28,6 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
 
   const present = new Set(s.tasks.map((t) => t.phase))
   const phases = [...new Set([...ALWAYS, ...PHASES.filter((p) => present.has(p)), ...present])].sort(comparePhase)
-  const selected = s.tasks.find((t) => t.id === s.selectedTaskID) ?? null
   const draggedTask = s.tasks.find((t) => t.name === dragging)
 
   useEffect(() => {
@@ -130,9 +129,7 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
         )}
       </div>
 
-      <aside className={`inspector ${selected ? 'open' : ''}`}>
-        {selected && <TaskInspector key={selected.id} task={selected} onDelete={() => setConfirm(selected)} />}
-      </aside>
+      <TaskInspectorPane />
 
       {menu && (
         <div
@@ -154,31 +151,49 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
         </div>
       )}
 
-      {confirm && (
-        <div className="modal-backdrop" onMouseDown={() => setConfirm(null)}>
-          <div className="modal card fade-in" onMouseDown={(e) => e.stopPropagation()}>
-            <h3>Delete task “{confirm.name}”?</h3>
-            <p className="muted" style={{ margin: '0 0 18px', lineHeight: 1.5 }}>
-              Its sandbox is torn down and the task is removed from <strong>{confirm.atespace}</strong>. This can't be undone.
-            </p>
-            <div className="row" style={{ justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={() => setConfirm(null)} autoFocus>Cancel</button>
-              <button
-                className="btn primary"
-                style={{ background: 'var(--red)' }}
-                onClick={() => {
-                  const t = confirm
-                  setConfirm(null)
-                  if (store.state.selectedTaskID === t.id) store.set({ selectedTaskID: null })
-                  void store.remove('task', t.name)
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+      {confirm && <DeleteTaskModal task={confirm} onClose={() => setConfirm(null)} />}
+    </div>
+  )
+}
+
+/** The selected task's inspector, sliding in from the right of whatever page hosts it. */
+export function TaskInspectorPane() {
+  const s = useStore()
+  const [confirm, setConfirm] = useState<AXTask | null>(null)
+  const selected = s.tasks.find((t) => t.id === s.selectedTaskID) ?? null
+  return (
+    <>
+      <aside className={`inspector ${selected ? 'open' : ''}`}>
+        {selected && <TaskInspector key={selected.id} task={selected} onDelete={() => setConfirm(selected)} />}
+      </aside>
+      {confirm && <DeleteTaskModal task={confirm} onClose={() => setConfirm(null)} />}
+    </>
+  )
+}
+
+function DeleteTaskModal({ task, onClose }: { task: AXTask; onClose: () => void }) {
+  return (
+    <div className="modal-backdrop" onMouseDown={onClose}>
+      <div className="modal card fade-in" onMouseDown={(e) => e.stopPropagation()}>
+        <h3>Delete task “{task.name}”?</h3>
+        <p className="muted" style={{ margin: '0 0 18px', lineHeight: 1.5 }}>
+          Its sandbox is torn down and the task is removed from <strong>{task.atespace}</strong>. This can't be undone.
+        </p>
+        <div className="row" style={{ justifyContent: 'flex-end' }}>
+          <button className="btn" onClick={onClose} autoFocus>Cancel</button>
+          <button
+            className="btn primary"
+            style={{ background: 'var(--red)' }}
+            onClick={() => {
+              onClose()
+              if (store.state.selectedTaskID === task.id) store.set({ selectedTaskID: null })
+              void store.remove('task', task.name)
+            }}
+          >
+            Delete
+          </button>
         </div>
-      )}
+      </div>
     </div>
   )
 }

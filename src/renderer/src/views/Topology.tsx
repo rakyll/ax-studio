@@ -3,6 +3,7 @@ import { Box, FolderGit2, FolderOpen, GitBranch, Network, Plug, type LucideIcon 
 import { store, useStore, type State } from '../model/store'
 import { type AXTask, type AXWorkspace, type GitRepo, type Phase, phaseColor, phaseLabel, repoName } from '../model/resources'
 import { Empty, PageHeader, PhaseIcon } from '../components'
+import { TaskInspectorPane } from './Board'
 import '../styles/topology.css'
 
 type Kind =
@@ -106,7 +107,7 @@ function describe(k: Kind): { icon: LucideIcon; tint: string; title: string; sub
       return { icon: FolderGit2, tint: 'var(--purple)', title: k.ws.name, subtitle: `${n} repo${n === 1 ? '' : 's'} · ${m} MCP`, tooltip: k.ws.name }
     }
     case 'task':
-      return { icon: Box, tint: phaseColor(k.task.phase), title: k.task.name, subtitle: `${phaseLabel(k.task.phase)} · ${k.task.age}`, tooltip: `${k.task.name} — click to open on the board` }
+      return { icon: Box, tint: phaseColor(k.task.phase), title: k.task.name, subtitle: `${phaseLabel(k.task.phase)} · ${k.task.age}`, tooltip: `${k.task.name} — click for details` }
   }
 }
 
@@ -139,76 +140,75 @@ export function Topology() {
   const empty = s.tasks.length === 0 && s.workspaces.length === 0
 
   return (
-    <div className="topology">
-      <div className="topology-head">
-        <PageHeader title="Network" subtitle="How sources feed workspaces and workspaces feed tasks. Running edges flow.">
-          <div className="row topo-legend">
-            {LEGEND.map((p) => (
-              <span key={p} className="row" style={{ gap: 4 }}>
-                <PhaseIcon phase={p} size={12} />
-                <span className="caption muted">{phaseLabel(p)}</span>
-              </span>
-            ))}
-            <input type="range" min={0.5} max={1.5} step={0.05} value={zoom} title={`Zoom ${Math.round(zoom * 100)}%`}
-              onChange={(e) => setZoom(+e.target.value)} style={{ width: 120, marginLeft: 8 }} />
-          </div>
-        </PageHeader>
-      </div>
-
-      <div className="topo-scroll dotgrid">
-        {empty ? (
-          <Empty icon={Network} title="Nothing to draw yet">Create a Workspace or Task in the Designer to see it here.</Empty>
-        ) : (
-          <div className="topo-sizer" style={{ width: graph.width * zoom, height: graph.height * zoom }}>
-            <div className="topo-canvas" style={{ width: graph.width, height: graph.height, transform: `scale(${zoom})` }}>
-              <svg className="topo-edges" width={graph.width} height={graph.height}>
-                <g>
-                  {graph.edges.map((e) => (
-                    <g key={e.id} className="topo-edge" style={{ opacity: edgeLit(e) ? 1 : 0.15 }}>
-                      <path d={e.d} fill="none" stroke={e.color} strokeOpacity={e.color === 'var(--purple)' ? 0.55 : 0.8}
-                        strokeWidth={lit && edgeLit(e) ? 2.5 : 1.6} />
-                      {e.flowing && [0, 0.55, 1.1].map((delay) => (
-                        <circle key={delay} r={3.2} fill={e.color}>
-                          <animateMotion dur="1.65s" begin={`${delay}s`} repeatCount="indefinite" path={e.d} />
-                        </circle>
-                      ))}
-                    </g>
-                  ))}
-                </g>
-              </svg>
-              {graph.nodes.map((n) => {
-                const d = describe(n.kind)
-                const task = n.kind.type === 'task' ? n.kind.task : null
-                return (
-                  <div
-                    key={n.id}
-                    className={`topo-node card ${task ? 'clickable' : ''} ${hover === n.id ? 'hovered' : ''}`}
-                    title={d.tooltip}
-                    style={{
-                      left: n.x - NODE_W / 2, top: n.y - NODE_H / 2, width: NODE_W, height: NODE_H,
-                      opacity: !lit || lit.has(n.id) ? 1 : 0.25, '--tint': d.tint,
-                    } as CSSProperties}
-                    onMouseEnter={() => setHover(n.id)}
-                    onMouseLeave={() => setHover((h) => (h === n.id ? null : h))}
-                    onClick={() => {
-                      if (!task) return
-                      store.set({ selectedTaskID: task.id })
-                      store.setSection('overview')
-                    }}
-                  >
-                    <div className="topo-icon"><d.icon size={16} color={d.tint} /></div>
-                    <div className="col topo-text">
-                      <div className="topo-title ellipsis">{d.title}</div>
-                      <div className="topo-sub ellipsis">{d.subtitle}</div>
-                    </div>
-                    {task && <PhaseIcon phase={task.phase} size={13} />}
-                  </div>
-                )
-              })}
+    <div className="topology-page">
+      <div className="topology">
+        <div className="topology-head">
+          <PageHeader title="Network" subtitle="How sources feed workspaces and workspaces feed tasks. Running edges flow.">
+            <div className="row topo-legend">
+              {LEGEND.map((p) => (
+                <span key={p} className="row" style={{ gap: 4 }}>
+                  <PhaseIcon phase={p} size={12} />
+                  <span className="caption muted">{phaseLabel(p)}</span>
+                </span>
+              ))}
+              <input type="range" min={0.5} max={1.5} step={0.05} value={zoom} title={`Zoom ${Math.round(zoom * 100)}%`}
+                onChange={(e) => setZoom(+e.target.value)} style={{ width: 120, marginLeft: 8 }} />
             </div>
-          </div>
-        )}
+          </PageHeader>
+        </div>
+
+        <div className="topo-scroll dotgrid">
+          {empty ? (
+            <Empty icon={Network} title="Nothing to draw yet">Create a Workspace or Task in the Designer to see it here.</Empty>
+          ) : (
+            <div className="topo-sizer" style={{ width: graph.width * zoom, height: graph.height * zoom }}>
+              <div className="topo-canvas" style={{ width: graph.width, height: graph.height, transform: `scale(${zoom})` }}>
+                <svg className="topo-edges" width={graph.width} height={graph.height}>
+                  <g>
+                    {graph.edges.map((e) => (
+                      <g key={e.id} className="topo-edge" style={{ opacity: edgeLit(e) ? 1 : 0.15 }}>
+                        <path d={e.d} fill="none" stroke={e.color} strokeOpacity={e.color === 'var(--purple)' ? 0.55 : 0.8}
+                          strokeWidth={lit && edgeLit(e) ? 2.5 : 1.6} />
+                        {e.flowing && [0, 0.55, 1.1].map((delay) => (
+                          <circle key={delay} r={3.2} fill={e.color}>
+                            <animateMotion dur="1.65s" begin={`${delay}s`} repeatCount="indefinite" path={e.d} />
+                          </circle>
+                        ))}
+                      </g>
+                    ))}
+                  </g>
+                </svg>
+                {graph.nodes.map((n) => {
+                  const d = describe(n.kind)
+                  const task = n.kind.type === 'task' ? n.kind.task : null
+                  return (
+                    <div
+                      key={n.id}
+                      className={`topo-node card ${task ? 'clickable' : ''} ${hover === n.id ? 'hovered' : ''} ${task && task.id === s.selectedTaskID ? 'selected' : ''}`}
+                      title={d.tooltip}
+                      style={{
+                        left: n.x - NODE_W / 2, top: n.y - NODE_H / 2, width: NODE_W, height: NODE_H,
+                        opacity: !lit || lit.has(n.id) ? 1 : 0.25, '--tint': d.tint,
+                      } as CSSProperties}
+                      onMouseEnter={() => setHover(n.id)}
+                      onMouseLeave={() => setHover((h) => (h === n.id ? null : h))}
+                      onClick={() => task && store.set({ selectedTaskID: task.id === s.selectedTaskID ? null : task.id })}
+                    >
+                      <div className="topo-icon"><d.icon size={16} color={d.tint} /></div>
+                      <div className="col topo-text">
+                        <div className="topo-title ellipsis">{d.title}</div>
+                        <div className="topo-sub ellipsis">{d.subtitle}</div>
+                      </div>
+                      {task && <PhaseIcon phase={task.phase} size={13} />}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+      <TaskInspectorPane />
     </div>
   )
 }

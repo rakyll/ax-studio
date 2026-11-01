@@ -1,4 +1,5 @@
-.topology { height: 100%; display: flex; flex-direction: column; }
+.topology-page { display: flex; height: 100%; min-width: 0; }
+.topology { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; }
 .topology-head { padding: 24px 28px 0; flex: none; }
 .topology-head .page-header { margin-bottom: 12px; }
 .topo-legend { gap: 12px; }
@@ -17,6 +18,7 @@
 }
 .topo-node.hovered { box-shadow: 0 0 0 3px color-mix(in srgb, var(--tint) 18%, transparent), var(--shadow-lift); transform: translateY(-1px); }
 .topo-node.clickable { cursor: pointer; }
+.topo-node.selected { box-shadow: 0 0 0 2px var(--tint), var(--shadow-lift); }
 .topo-icon {
   width: 32px; height: 32px; border-radius: 8px; flex: none; display: flex; align-items: center; justify-content: center;
   background: color-mix(in srgb, var(--tint) 14%, transparent);
