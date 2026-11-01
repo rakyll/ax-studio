@@ -127,3 +127,13 @@
 .foot-result.ok { color: var(--green); background: color-mix(in srgb, var(--green) 10%, transparent); }
 .foot-result.err { color: var(--red); background: color-mix(in srgb, var(--red) 10%, transparent); }
 .foot-result svg { flex: none; }
+
+/* MARK: Environment */
+
+.env-grid { display: grid; grid-template-columns: minmax(0, 2fr) auto minmax(0, 3fr) auto; gap: 6px; align-items: start; }
+.env-grid .input { width: 100%; }
+.env-eq { padding-top: 6px; }
+.env-value { position: relative; display: flex; align-items: center; min-width: 0; }
+.env-value.secret .input { padding-left: 26px; padding-right: 30px; }
+.env-lock { position: absolute; left: 9px; color: var(--warn); pointer-events: none; }
+.env-eye.btn { position: absolute; right: 2px; }

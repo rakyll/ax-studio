@@ -1,13 +1,13 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
-  Box, Check, CircleCheck, CircleX, Copy, Cpu, FileCode2, FolderGit2, FolderOpen, LayoutGrid, MemoryStick, Play,
-  Plus, Save, Sparkles, TriangleAlert, X, type LucideIcon,
+  Box, Check, CircleCheck, CircleX, Copy, Cpu, Eye, EyeOff, FileCode2, FolderGit2, FolderOpen, LayoutGrid, Lock, MemoryStick,
+  Play, Plus, Save, Sparkles, TriangleAlert, Variable, X, type LucideIcon,
 } from 'lucide-react'
 import { Dropdown } from '../App'
 import { PageHeader, Segmented, Toggle } from '../components'
 import {
-  TEMPLATES, canApply, cpuString, designer, generate, isSecret, issues, memoryString, uid, useDraft,
-  type ConfigMode, type Draft, type WorkspaceMode,
+  TEMPLATES, canApply, cpuString, designer, formatEnv, generate, isSecret, issues, memoryString, parseEnv, uid, useDraft,
+  validateEnvName, type ConfigMode, type Draft, type KeyValue, type WorkspaceMode,
 } from '../model/designer'
 import { validateImage, validateLabel } from '../model/resources'
 import { store, useStore } from '../model/store'
@@ -240,21 +240,9 @@ function DesignerForm({ d }: { d: Draft }) {
           <input className="input mono" value={d.command} placeholder="runner decides" spellCheck={false}
             onChange={(e) => set({ command: e.target.value })} />
         </Field>
-        <Field label="Environment">
-          <div className="col" style={{ gap: 6 }}>
-            {d.env.map((kv) => (
-              <div key={kv.id} className="ds-row">
-                <input className="input mono" style={{ flex: '0 0 40%' }} value={kv.key} placeholder="NAME" spellCheck={false}
-                  onChange={(e) => set({ env: update(d.env, kv.id, { key: e.target.value }) })} />
-                <input className="input mono" type={isSecret(kv.key) ? 'password' : 'text'} value={kv.value} placeholder="value"
-                  spellCheck={false} onChange={(e) => set({ env: update(d.env, kv.id, { value: e.target.value }) })} />
-                <RowRemove onClick={() => set({ env: d.env.filter((x) => x.id !== kv.id) })} />
-              </div>
-            ))}
-            <AddButton label="Add variable" onClick={() => set({ env: [...d.env, { id: uid(), key: '', value: '' }] })} />
-          </div>
-        </Field>
       </Section>
+
+      <Environment env={d.env} />
 
       <Section icon={Cpu} tint="var(--orange)" title="Sandbox">
         <Meter icon={Cpu} label="CPU" value={d.cpu} min={0.25} max={8} step={0.25} display={cpuString(d.cpu)}
@@ -325,6 +313,106 @@ function DesignerForm({ d }: { d: Draft }) {
         )}
       </Section>
     </div>
+  )
+}
+
+/** Rows from .env text, keeping the ids of rows still in the same place. */
+const envRows = (text: string, prev: KeyValue[]): KeyValue[] =>
+  parseEnv(text).map((kv, i) => ({ id: prev[i]?.id ?? uid(), ...kv }))
+
+function Environment({ env }: { env: KeyValue[] }) {
+  const [mode, setMode] = useState<'form' | 'text'>('form')
+  const [text, setText] = useState('')
+  const [shown, setShown] = useState<Set<number>>(new Set())
+  const secrets = env.filter((kv) => isSecret(kv.key)).length
+  const toggleShown = (id: number) => setShown((prev) => {
+    const next = new Set(prev)
+    if (!next.delete(id)) next.add(id)
+    return next
+  })
+  // Pasting NAME=value lines into a row turns them into rows.
+  const onPaste = (kv: KeyValue) => (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text')
+    if (!/^\s*(export\s+)?[A-Za-z_]\w*=/m.test(pasted)) return
+    const rows = envRows(pasted, [])
+    if (rows.length === 0) return
+    e.preventDefault()
+    const i = env.findIndex((x) => x.id === kv.id)
+    const keep = kv.key || kv.value ? [env[i]] : []
+    set({ env: [...env.slice(0, i), ...keep, ...rows, ...env.slice(i + 1)] })
+  }
+  return (
+    <Section icon={Variable} tint="var(--green)" title="Environment"
+      trailing={
+        <>
+          {env.length > 0 && (
+            <span className="caption faint">
+              {env.length} {env.length === 1 ? 'variable' : 'variables'}{secrets ? ` · ${secrets} secret` : ''}
+            </span>
+          )}
+          <Segmented<'form' | 'text'> value={mode}
+            onChange={(m) => {
+              if (m === 'text') setText(formatEnv(env.filter((kv) => kv.key || kv.value)))
+              setMode(m)
+            }}
+            options={[{ value: 'form', label: 'Form' }, { value: 'text', label: '.env' }]} />
+        </>
+      }>
+      {mode === 'text' ? (
+        <>
+          <textarea className="textarea mono" rows={Math.max(4, Math.min(14, text.split('\n').length + 1))} spellCheck={false}
+            value={text} placeholder={'NAME=value\nAPI_KEY=...'} autoFocus
+            onChange={(e) => {
+              setText(e.target.value)
+              set({ env: envRows(e.target.value, env) })
+            }} />
+          <p className="caption faint ds-hint">One <code>NAME=value</code> per line. Lines starting with # are ignored.</p>
+        </>
+      ) : (
+        <>
+          {env.length === 0 && (
+            <p className="muted ds-hint">Set variables for the task's process. Paste <code>NAME=value</code> lines into a name to add several at once.</p>
+          )}
+          {env.length > 0 && (
+            <div className="env-grid">
+              <span className="caption faint">Name</span>
+              <span />
+              <span className="caption faint">Value</span>
+              <span />
+              {env.map((kv) => {
+                const err = validateEnvName(kv.key, env)
+                const secret = isSecret(kv.key)
+                const visible = !secret || shown.has(kv.id)
+                return (
+                  <Fragment key={kv.id}>
+                    <div className="col" style={{ gap: 2, minWidth: 0 }}>
+                      <input className={`input mono ${err ? 'invalid' : ''}`} value={kv.key} placeholder="NAME" spellCheck={false}
+                        onPaste={onPaste(kv)}
+                        onChange={(e) => set({ env: update(env, kv.id, { key: e.target.value }) })} />
+                      {err && <span className="ds-error caption">{err}</span>}
+                    </div>
+                    <span className="env-eq mono faint">=</span>
+                    <div className={`env-value ${secret ? 'secret' : ''}`}>
+                      {secret && <Lock size={12} className="env-lock" />}
+                      <input className="input mono" type={visible ? 'text' : 'password'} value={kv.value}
+                        placeholder={secret ? 'required' : 'value'} spellCheck={false}
+                        onChange={(e) => set({ env: update(env, kv.id, { value: e.target.value }) })} />
+                      {secret && (
+                        <button className="btn small icon ghost env-eye" title={visible ? 'Hide' : 'Show'} onClick={() => toggleShown(kv.id)}>
+                          {visible ? <EyeOff size={13} /> : <Eye size={13} />}
+                        </button>
+                      )}
+                    </div>
+                    <RowRemove onClick={() => set({ env: env.filter((x) => x.id !== kv.id) })} />
+                  </Fragment>
+                )
+              })}
+            </div>
+          )}
+          <AddButton label="Add variable" onClick={() => set({ env: [...env, { id: uid(), key: '', value: '' }] })} />
+        </>
+      )}
+    </Section>
   )
 }
 

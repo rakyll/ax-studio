@@ -186,6 +186,31 @@ export interface Issue { severity: 'error' | 'warning'; text: string }
 
 export const isSecret = (key: string) => /KEY|TOKEN|SECRET|PASSWORD/i.test(key)
 
+/** Why an env var name won't work, or null. */
+export function validateEnvName(key: string, all: KeyValue[]): string | null {
+  if (!key) return null
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) return 'letters, digits and _, not starting with a digit'
+  if (all.filter((kv) => kv.key === key).length > 1) return 'set more than once'
+  return null
+}
+
+/** Parses .env-style text: NAME=value lines, with blank lines, comments and `export` ignored. */
+export function parseEnv(text: string): { key: string; value: string }[] {
+  const out: { key: string; value: string }[] = []
+  for (const raw of text.split('\n')) {
+    const line = raw.trim().replace(/^export\s+/, '')
+    if (!line || line.startsWith('#')) continue
+    const eq = line.indexOf('=')
+    const key = (eq < 0 ? line : line.slice(0, eq)).trim()
+    let value = eq < 0 ? '' : line.slice(eq + 1).trim()
+    if (value.length >= 2 && (value[0] === '"' || value[0] === "'") && value.endsWith(value[0])) value = value.slice(1, -1)
+    out.push({ key, value })
+  }
+  return out
+}
+
+export const formatEnv = (env: KeyValue[]) => env.map((kv) => `${kv.key}=${kv.value}`).join('\n')
+
 export function issues(d: Draft): Issue[] {
   if (d.rawMode) return []
   const out: Issue[] = []
@@ -200,7 +225,8 @@ export function issues(d: Draft): Issue[] {
   if (d.workspaceMode === 'existing' && !d.existingWorkspace) err('Pick a workspace to bind')
   if (d.workspaceMode === 'new' && d.repos.some((r) => !r.repo)) warn('A git repo has no URL')
   if (d.includeModel && (e = validateLabel(d.modelName))) err(`Model name: ${e}`)
-  if (d.env.some((kv) => !kv.key)) warn('An env var has no name')
+  if (d.env.some((kv) => !kv.key && kv.value)) warn('An env var has no name')
+  if (d.env.some((kv) => validateEnvName(kv.key, d.env))) err('Environment: fix the highlighted names')
   if (d.env.some((kv) => isSecret(kv.key) && !kv.value)) warn('A credential env var is empty')
   return out
 }
