@@ -6,6 +6,7 @@ import {
 import { store, useStore, type Result } from '../model/store'
 import { type AXTask, type Condition, type Phase, PHASES, comparePhase, phaseColor, phaseLabel, shortImage } from '../model/resources'
 import { Chip, Empty, PhaseBadge, PhaseIcon, since } from '../components'
+import { TaskLogs } from './TaskLogs'
 import '../styles/board.css'
 
 const ALWAYS: Phase[] = ['pending', 'running', 'suspended', 'failed']
@@ -332,6 +333,10 @@ function TaskInspector({ task: t, onDelete }: { task: AXTask; onDelete: () => vo
             </div>
           </InspectorSection>
         )}
+
+        <InspectorSection title="Logs">
+          <TaskLogs task={t} />
+        </InspectorSection>
 
         {t.phase === 'running' && (
           <InspectorSection title="Run in sandbox">

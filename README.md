@@ -8,7 +8,7 @@ and packaged as a native app for macOS, Windows and Linux.
 
 | Section | What it does |
 |---|---|
-| **Overview** | A one-line digest (task count, phase breakdown, a this-session sparkline, workspaces and models, latest activity) above the task board: kanban by phase. Drag a card to Running/Suspended to resume/suspend; inspector, shell, delete. |
+| **Overview** | A one-line digest (task count, phase breakdown, a this-session sparkline, workspaces and models, latest activity) above the task board: kanban by phase. Drag a card to Running/Suspended to resume/suspend; the inspector shows conditions and follows the task's logs, with shell and delete. |
 | **Topology** | Sources → workspaces → tasks graph; running edges animate. |
 | **Designer** | Form + live composition diagram + generated YAML (or raw edit). Templates, open/save, apply. |
 | **Deploy** | Kubernetes pipeline: Agent Substrate → Build & push images → AX → Verify, with a live console. |
@@ -41,6 +41,13 @@ focus, render off-screen:
 ```sh
 npx electron . --section=clusters --cluster=ax-dev --delay=7000 --screenshot=docs/screenshots/clusters.png
 ```
+
+`--context=<name>` picks the AX context and `--task=<name>` opens that task's
+inspector.
+
+Task logs come from the Agent Substrate worker pods in `ax-system`: the app
+follows them with `kubectl logs` and keeps the task's `guest` container lines
+from the last 24 hours. They're only available on Kubernetes contexts.
 
 ## Package
 

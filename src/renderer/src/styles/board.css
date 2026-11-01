@@ -116,3 +116,6 @@
   color: var(--text-2); font: inherit; font-size: 12px; transition: color .15s, border-color .15s, background .15s;
 }
 .board-col-new:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.task-logs { min-height: 64px; max-height: 280px; line-height: 1.45; }
+.task-logs .runner { color: #8d8d93; }
+.task-logs-foot { gap: 6px; margin-top: 6px; }

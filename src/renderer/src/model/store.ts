@@ -91,6 +91,8 @@ class Store {
   private timer: ReturnType<typeof setTimeout> | null = null
   private started = false
   private nextID = 1
+  /** `?task=` from the command line: select it once it loads. */
+  private askedTask = new URLSearchParams(location.search).get('task')
 
   subscribe = (l: () => void) => {
     this.listeners.add(l)
@@ -151,7 +153,8 @@ class Store {
       return
     }
     const contexts = parseContexts(r.stdout)
-    this.set({ contexts, context: this.state.context || contexts.find((c) => c.isCurrent)?.name || 'local' })
+    const asked = new URLSearchParams(location.search).get('context')
+    this.set({ contexts, context: this.state.context || asked || contexts.find((c) => c.isCurrent)?.name || 'local' })
   }
 
   // MARK: Running ax
@@ -205,6 +208,7 @@ class Store {
       this.set({
         connectionError: null,
         tasks: same(tasks, this.state.tasks) ? this.state.tasks : tasks,
+        ...(this.askedTask && tasks.some((t) => t.name === this.askedTask) ? { selectedTaskID: tasks.find((t) => t.name === this.askedTask)!.id } : {}),
         workspaces,
         models: mr.ok ? parseModels(mr.stdout) : this.state.models,
         lastRefresh: Date.now(),

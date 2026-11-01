@@ -38,9 +38,10 @@ function createWindow() {
     shell.openExternal(url)
     return { action: 'deny' }
   })
-  // `--section=board` opens a specific page; `--cluster=name` expands a cluster card.
+  // `--section=clusters` opens a specific page; `--cluster=name` expands a
+  // cluster card; `--context=name` and `--task=name` open a task's inspector.
   const query: Record<string, string> = {}
-  for (const k of ['section', 'cluster']) {
+  for (const k of ['section', 'cluster', 'context', 'task']) {
     const v = arg(k)
     if (v) query[k] = v
   }
