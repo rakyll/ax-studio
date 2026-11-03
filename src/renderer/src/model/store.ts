@@ -183,8 +183,12 @@ class Store {
       contexts = await kubeContexts()
       this.set({ axConfig: false })
     } else {
-      this.set({ connectionError: r.error })
-      return
+      // An ax without `ax config` connects before it parses the command, so an
+      // unreachable cluster hides the unknown command. Still list kubectl's
+      // contexts so the user can switch to one that works.
+      contexts = await kubeContexts()
+      this.set({ connectionError: r.error, axConfig: false })
+      if (!contexts.length) return
     }
     const asked = new URLSearchParams(location.search).get('context')
     this.set({ contexts, context: this.state.context || asked || contexts.find((c) => c.isCurrent)?.name || (this.state.axConfig ? 'local' : contexts[0]?.name ?? '') })
