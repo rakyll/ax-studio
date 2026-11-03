@@ -1,4 +1,5 @@
 .clusters-top { padding: 24px 28px 16px; flex: none; max-height: 68%; overflow: auto; }
+.clusters-top.full { flex: 1; max-height: none; }
 .clusters-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; margin-top: 4px; }
 .cluster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
 .cluster-empty { padding: 28px 16px; }

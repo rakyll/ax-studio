@@ -31,7 +31,7 @@ export function Clusters() {
 
   return (
     <div className="clusters">
-      <div className="clusters-top">
+      <div className={`clusters-top ${outputOpen ? '' : 'full'}`}>
         <PageHeader title="Clusters" subtitle="Local AX clusters on kind: Kubernetes, then Agent Substrate, then the AX control plane.">
           {running && <button className="btn" onClick={() => clusters.cancel()}><Square size={12} />Stop</button>}
           <button className="btn" onClick={() => void clusters.refresh()} disabled={c.loading} title="Refresh">
