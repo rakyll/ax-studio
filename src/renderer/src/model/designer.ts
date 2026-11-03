@@ -101,8 +101,8 @@ function agentTask(d: Draft, name: keyof typeof IMAGE_DIGESTS, config: string, s
     customConfig: config,
     env: secrets.map((key) => ({ id: uid(), key, value: '' })),
     workspaceMode: 'new',
-    wsName: `itsdangerous-${name}`,
-    repos: [{ id: uid(), name: 'origin', repo: 'https://github.com/pallets/itsdangerous.git', branch: 'main' }],
+    wsName: `cachetools-${name}`,
+    repos: [{ id: uid(), name: 'origin', repo: 'https://github.com/tkem/cachetools.git', branch: 'master' }],
     files: [{
       id: uid(),
       path: 'AGENTS.md',
