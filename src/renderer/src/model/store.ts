@@ -63,6 +63,8 @@ let tabCount = 0
 
 const SETTINGS_KEY = 'ax-studio.settings'
 const SECTION_KEY = 'ax-studio.section'
+/** The context last picked, so a broken kube default doesn't greet every launch. */
+const CONTEXT_KEY = 'ax-studio.context'
 
 function loadSettings(): Settings {
   const defaults: Settings = { axPath: 'ax', repoPath: '~/ax', refreshInterval: 4 }
@@ -165,6 +167,7 @@ class Store {
   }
 
   setScope(patch: { context?: string; atespace?: string }) {
+    if (patch.context) localStorage.setItem(CONTEXT_KEY, patch.context)
     this.set({ ...patch, tasks: [], workspaces: [], models: [], details: {}, history: [], selectedTaskID: null, connectionError: null })
     void this.refresh()
   }
@@ -172,7 +175,11 @@ class Store {
   async loadContexts() {
     const v = result(await window.studio.run({ program: this.state.settings.axPath, args: ['version'] }))
     this.set({ axVersion: v.ok ? v.stdout.trim() : null })
-    const r = result(await window.studio.run({ program: this.state.settings.axPath, args: ['config', 'get-contexts'] }))
+    // Ask through the last-used context: an ax without `ax config` connects
+    // first, and the kube default may be unreachable.
+    const saved = localStorage.getItem(CONTEXT_KEY)
+    const via = saved ? ['--context', saved] : []
+    const r = result(await window.studio.run({ program: this.state.settings.axPath, args: [...via, 'config', 'get-contexts'] }))
     let contexts: AXContext[]
     if (r.ok) {
       contexts = parseContexts(r.stdout)
@@ -187,11 +194,16 @@ class Store {
       // unreachable cluster hides the unknown command. Still list kubectl's
       // contexts so the user can switch to one that works.
       contexts = await kubeContexts()
-      this.set({ connectionError: r.error, axConfig: false })
-      if (!contexts.length) return
+      this.set({ axConfig: false })
+      // With contexts to pick from, refresh reports the chosen one's errors.
+      if (!contexts.length) {
+        this.set({ connectionError: r.error })
+        return
+      }
     }
     const asked = new URLSearchParams(location.search).get('context')
-    this.set({ contexts, context: this.state.context || asked || contexts.find((c) => c.isCurrent)?.name || (this.state.axConfig ? 'local' : contexts[0]?.name ?? '') })
+    const last = contexts.find((c) => c.name === saved)?.name
+    this.set({ contexts, context: this.state.context || asked || last || contexts.find((c) => c.isCurrent)?.name || (this.state.axConfig ? 'local' : contexts[0]?.name ?? '') })
   }
 
   // MARK: Running ax
