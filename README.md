@@ -17,7 +17,8 @@ AX clusters. Built with Electron, React and TypeScript for macOS, Windows and Li
 | | |
 |---|---|
 | ![Map](docs/screenshots/topology.png) **Map** | ![Deploy](docs/screenshots/designer.png) **Deploy** |
-| ![Clusters](docs/screenshots/clusters.png) **Clusters** | ![Task logs](docs/screenshots/logs.png) **Task logs** |
+| ![Terminal](docs/screenshots/terminal.png) **Terminal** | ![Clusters](docs/screenshots/clusters.png) **Clusters** |
+| ![Task logs](docs/screenshots/logs.png) **Task logs** | |
 
 The app calls the `ax` CLI and `kubectl`. It passes `--context` on every call,
 so it never changes your global context.
