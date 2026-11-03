@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import {
-  ArrowDown, ArrowUp, ArrowUpDown, Bolt, Check, ChevronRight, CircleCheck, CircleX, Copy, FolderGit2, Pause, Play,
+  ArrowDown, ArrowRightLeft, ArrowUp, ArrowUpDown, Bolt, Check, ChevronRight, CircleCheck, CircleX, Copy, FolderGit2, Pause, Play,
   Plus, Rows3, Terminal, Trash2, X, type LucideIcon,
 } from 'lucide-react'
 import { store, useStore } from '../model/store'
 import { type AXTask, type AXWorkspace, type Condition, type Phase, phaseColor, phaseLabel, repoName, shortImage } from '../model/resources'
 import { Empty, PhaseBadge, PhaseIcon, since } from '../components'
+import { MoveTaskModal } from './MoveTask'
 import { TaskLogs } from './TaskLogs'
 import '../styles/board.css'
 
@@ -40,6 +41,7 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
   const [sort, setSort] = useState<Sort>({ key: 'state', dir: 1 })
   const [menu, setMenu] = useState<MenuState>(null)
   const [confirm, setConfirm] = useState<AXTask | null>(null)
+  const [moving, setMoving] = useState<AXTask | null>(null)
 
   useEffect(() => {
     if (!menu) return
@@ -117,6 +119,7 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
                     selected={t.id === s.selectedTaskID}
                     onMenu={(x, y) => setMenu({ task: t, x, y })}
                     onDelete={() => setConfirm(t)}
+                    onMove={() => setMoving(t)}
                   />
                 ))}
               </tbody>
@@ -134,7 +137,7 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
           style={{ left: Math.min(menu.x, window.innerWidth - 220), top: Math.min(menu.y, window.innerHeight - 160) }}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {actionsFor(menu.task, () => setConfirm(menu.task)).map((a) => (
+          {actionsFor(menu.task, () => setConfirm(menu.task), () => setMoving(menu.task)).map((a) => (
             <button
               key={a.label}
               className="menu-item"
@@ -149,6 +152,7 @@ export function TaskBoard({ before }: { before?: ReactNode }) {
       )}
 
       {confirm && <DeleteTaskModal task={confirm} onClose={() => setConfirm(null)} />}
+      {moving && <MoveTaskModal task={moving} onClose={() => setMoving(null)} />}
     </div>
   )
 }
@@ -246,13 +250,15 @@ function DeleteWorkspaceModal({ ws, users, onClose }: { ws: AXWorkspace; users: 
 export function TaskInspectorPane() {
   const s = useStore()
   const [confirm, setConfirm] = useState<AXTask | null>(null)
+  const [moving, setMoving] = useState<AXTask | null>(null)
   const selected = s.tasks.find((t) => t.id === s.selectedTaskID) ?? null
   return (
     <>
       <aside className={`inspector ${selected ? 'open' : ''}`}>
-        {selected && <TaskInspector key={selected.id} task={selected} onDelete={() => setConfirm(selected)} />}
+        {selected && <TaskInspector key={selected.id} task={selected} onDelete={() => setConfirm(selected)} onMove={() => setMoving(selected)} />}
       </aside>
       {confirm && <DeleteTaskModal task={confirm} onClose={() => setConfirm(null)} />}
+      {moving && <MoveTaskModal task={moving} onClose={() => setMoving(null)} />}
     </>
   )
 }
@@ -286,22 +292,24 @@ function DeleteTaskModal({ task, onClose }: { task: AXTask; onClose: () => void 
 
 interface Action { label: string; icon: LucideIcon; run: () => void; danger?: boolean }
 
-function actionsFor(t: AXTask, onDelete: () => void): Action[] {
+function actionsFor(t: AXTask, onDelete: () => void, onMove: () => void): Action[] {
   const a: Action[] = []
   if (t.phase === 'suspended' || t.phase === 'failed' || t.phase === 'completed')
     a.push({ label: 'Resume', icon: Play, run: () => void store.resume(t) })
   if (t.phase === 'running' || t.phase === 'pending')
     a.push({ label: 'Suspend', icon: Pause, run: () => void store.suspend(t) })
   if (t.phase === 'running') a.push({ label: 'Terminal', icon: Terminal, run: () => store.openTerminal(t) })
+  a.push({ label: 'Move to Cluster…', icon: ArrowRightLeft, run: onMove })
   a.push({ label: 'Delete…', icon: Trash2, run: onDelete, danger: true })
   return a
 }
 
-function TaskRow({ task: t, selected, onMenu, onDelete }: {
+function TaskRow({ task: t, selected, onMenu, onDelete, onMove }: {
   task: AXTask
   selected: boolean
   onMenu: (x: number, y: number) => void
   onDelete: () => void
+  onMove: () => void
 }) {
   const detail = useStore().details[t.id]
   return (
@@ -326,7 +334,7 @@ function TaskRow({ task: t, selected, onMenu, onDelete }: {
       <td className="col-age num" title={detail?.createTime}>{t.age}</td>
       <td className="col-actions">
         <div className="task-row-actions" onClick={(e) => e.stopPropagation()}>
-          {actionsFor(t, onDelete).map((a) => (
+          {actionsFor(t, onDelete, onMove).map((a) => (
             <button key={a.label} className={`btn ghost small icon ${a.danger ? 'danger' : ''}`} title={a.label.replace('…', '')} onClick={a.run}>
               <a.icon size={12} />
             </button>
@@ -339,7 +347,7 @@ function TaskRow({ task: t, selected, onMenu, onDelete }: {
 
 // MARK: Inspector
 
-function TaskInspector({ task: t, onDelete }: { task: AXTask; onDelete: () => void }) {
+function TaskInspector({ task: t, onDelete, onMove }: { task: AXTask; onDelete: () => void; onMove: () => void }) {
   const detail = useStore().details[t.id]
   const [showManifest, setShowManifest] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -379,7 +387,7 @@ function TaskInspector({ task: t, onDelete }: { task: AXTask; onDelete: () => vo
         <LifecycleTrack phase={t.phase} conditions={detail?.conditions ?? []} />
 
         <div className="row" style={{ flexWrap: 'wrap' }}>
-          {actionsFor(t, onDelete).map((a) => (
+          {actionsFor(t, onDelete, onMove).map((a) => (
             <button key={a.label} className={`btn small ${a.danger ? 'danger' : ''}`} onClick={a.run}>
               <a.icon size={12} /> {a.label.replace('…', '')}
             </button>

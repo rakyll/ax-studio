@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import * as sh from './shell'
 import { createTray, updateTray } from './tray'
-import type { RunRequest, SessionRequest, StreamRequest, TraySummary } from '../shared/api'
+import type { PipeRequest, RunRequest, SessionRequest, StreamRequest, TraySummary } from '../shared/api'
 
 const isMac = process.platform === 'darwin'
 let win: BrowserWindow | null = null
@@ -143,6 +143,7 @@ function registerIPC() {
     version: app.getVersion(),
   }))
   ipcMain.handle('run', (_e, req: RunRequest) => sh.run(req))
+  ipcMain.handle('pipe', (_e, req: PipeRequest) => sh.pipe(req))
   ipcMain.handle('stream', (e, req: StreamRequest) => {
     sh.stream(
       req,

@@ -16,6 +16,13 @@ export interface RunRequest {
   env?: Record<string, string>
 }
 
+/** Two commands joined by a pipe: `from`'s stdout feeds `to`'s stdin as raw bytes. */
+export interface PipeRequest {
+  program: string
+  from: string[]
+  to: string[]
+}
+
 export interface StreamRequest {
   id: string
   /** Run by the platform shell (sh/zsh, or bash/cmd on Windows). */
@@ -71,6 +78,8 @@ export interface TraySummary {
 export interface StudioAPI {
   platform(): Promise<PlatformInfo>
   run(req: RunRequest): Promise<CommandResult>
+  /** Runs `program from… | program to…`; fails if either side does. */
+  pipe(req: PipeRequest): Promise<CommandResult>
   stream(req: StreamRequest): Promise<void>
   cancelStream(id: string): Promise<void>
   onStreamLine(cb: (l: StreamLine) => void): () => void

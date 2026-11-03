@@ -12,6 +12,7 @@ function listen<T>(channel: string, cb: (v: T) => void) {
 const api: StudioAPI = {
   platform: () => ipcRenderer.invoke('platform'),
   run: (req) => ipcRenderer.invoke('run', req),
+  pipe: (req) => ipcRenderer.invoke('pipe', req),
   stream: (req) => ipcRenderer.invoke('stream', req),
   cancelStream: (id) => ipcRenderer.invoke('cancelStream', id),
   onStreamLine: (cb) => listen<StreamLine>('stream:line', cb),

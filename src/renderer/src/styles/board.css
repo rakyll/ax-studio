@@ -30,7 +30,7 @@
 .col-image { width: 18%; }
 .col-worker { width: 110px; }
 .col-age { width: 70px; color: var(--text-2); }
-.col-actions { width: 104px; }
+.col-actions { width: 128px; }
 .col-repos { width: 24%; }
 .col-mcp { width: 18%; }
 .col-files { width: 16%; }
@@ -122,3 +122,8 @@
 .task-logs-title { gap: 8px; margin-bottom: 2px; }
 .task-logs-modal .task-logs { flex: 1; max-height: none; font-size: 12.5px; }
 
+
+.move-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.move-step { display: flex; gap: 10px; align-items: flex-start; }
+.move-step > svg { flex: none; margin-top: 2px; }
+.move-step.pending { color: var(--text-2); }

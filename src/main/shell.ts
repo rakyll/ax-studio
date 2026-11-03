@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import DOCKER_SHIM from './docker-shim.sh?raw'
-import type { CommandResult, ContainerRuntime, RunRequest, SessionRequest, StreamRequest } from '../shared/api'
+import type { CommandResult, ContainerRuntime, PipeRequest, RunRequest, SessionRequest, StreamRequest } from '../shared/api'
 
 const isWin = process.platform === 'win32'
 
@@ -66,6 +66,41 @@ export function run(req: RunRequest): Promise<CommandResult> {
     child.on('close', (code) => resolve({ status: code ?? 1, stdout, stderr }))
     if (req.stdin !== undefined) child.stdin?.end(req.stdin)
     else child.stdin?.end()
+  })
+}
+
+/**
+ * Runs `program from… | program to…` with raw bytes in between, e.g. a tar
+ * stream from one task's `ax ssh` into another's. Fails if either side does.
+ */
+export function pipe(req: PipeRequest): Promise<CommandResult> {
+  return new Promise((resolve) => {
+    const program = which(req.program) ?? req.program
+    let stdout = ''
+    let stderr = ''
+    let failed: number | null = null
+    let left = 2
+    const done = (code: number | null) => {
+      if (code !== 0 && failed === null) failed = code ?? 1
+      if (--left === 0) resolve({ status: failed ?? 0, stdout, stderr })
+    }
+    const from = spawn(program, req.from, { env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+    const to = spawn(program, req.to, { env, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] })
+    from.stdout.pipe(to.stdin)
+    // A reader that quits early shouldn't crash the main process with EPIPE.
+    to.stdin.on('error', () => {})
+    from.stderr.setEncoding('utf8').on('data', (d) => (stderr += d))
+    to.stderr.setEncoding('utf8').on('data', (d) => (stderr += d))
+    to.stdout.setEncoding('utf8').on('data', (d) => (stdout += d))
+    for (const child of [from, to]) {
+      // 'close' may or may not follow 'error'; count each child once.
+      let ended = false
+      const end = (code: number | null) => { if (!ended) { ended = true; done(code) } }
+      child.on('error', (e) => { stderr += `${req.program}: ${e.message}\n`; end(127) })
+      child.on('close', end)
+    }
+    // If the writer dies, don't leave the reader waiting forever.
+    from.on('close', (code) => code !== 0 && to.stdin.destroy())
   })
 }
 
