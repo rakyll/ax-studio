@@ -6,14 +6,15 @@
 # - push records the digest the registry stored; podman recompresses layers,
 #   so the local RepoDigests that `inspect` reports would not match it.
 # - `buildx build --push` builds a podman manifest and pushes it, recording
-#   the pushed digest so `buildx imagetools inspect` can report it.
+#   the pushed digest so `buildx imagetools inspect` can report it, and
+#   writing it to --metadata-file as buildx would.
 
 digests=${TMPDIR:-/tmp}/ax-studio-buildx
 digestfile() { printf '%s/%s' "$digests" "$(printf '%s' "$1" | tr '/:@' '___')"; }
 tls() { case "$1" in localhost:*|127.0.0.1:*) echo --tls-verify=false ;; esac; }
 
 buildx_build() {
-  plat= tag= push=
+  plat= tag= push= meta=
   n=$#
   while [ "$n" -gt 0 ]; do
     a=$1; shift; n=$((n - 1))
@@ -22,6 +23,8 @@ buildx_build() {
       --load) ;;
       --platform=*) plat=${a#--platform=} ;;
       --platform) plat=$1; shift; n=$((n - 1)) ;;
+      --metadata-file=*) meta=${a#--metadata-file=} ;;
+      --metadata-file) meta=$1; shift; n=$((n - 1)) ;;
       --tag=*) tag=${a#--tag=} ;;
       -t|--tag) tag=$1; shift; n=$((n - 1)) ;;
       *) set -- "$@" "$a" ;;
@@ -33,7 +36,9 @@ buildx_build() {
   podman manifest rm "$tag" >/dev/null 2>&1 || podman rmi "$tag" >/dev/null 2>&1 || true
   podman build ${plat:+--platform "$plat"} --manifest "$tag" "$@" || exit
   mkdir -p "$digests"
-  exec podman manifest push --all $(tls "$tag") --digestfile "$(digestfile "$tag")" "$tag" "docker://$tag"
+  f=$(digestfile "$tag")
+  podman manifest push --all $(tls "$tag") --digestfile "$f" "$tag" "docker://$tag" || exit
+  [ -z "$meta" ] || printf '{"image.name":"%s","containerimage.digest":"%s"}\n' "$tag" "$(cat "$f")" > "$meta"
 }
 
 imagetools_inspect() {
@@ -93,7 +98,7 @@ case "$1" in
     esac ;;
   buildx)
     case "$2" in
-      build) shift 2; buildx_build "$@" ;;
+      build) shift 2; buildx_build "$@"; exit ;;
       imagetools) [ "$3" = inspect ] && { shift 3; imagetools_inspect "$@"; exit; } ;;
       version) echo "github.com/docker/buildx ax-studio-podman-shim"; exit 0 ;;
     esac ;;
