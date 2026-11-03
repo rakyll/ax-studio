@@ -3,7 +3,7 @@ import { validateImage, validateLabel } from './resources'
 
 export type WorkspaceMode = 'none' | 'existing' | 'new'
 export type ConfigMode = 'none' | 'custom'
-export type Template = 'blank' | 'simple' | 'gemini' | 'openai' | 'claude-managed-agents' | 'github-actions'
+export type Preset = 'blank' | 'simple' | 'antigravity' | 'claude-managed-agents' | 'github-actions'
 
 export interface KeyValue { id: number; key: string; value: string }
 export interface RepoDraft { id: number; name: string; repo: string; branch: string }
@@ -53,11 +53,10 @@ export const hexID = () => Array.from(crypto.getRandomValues(new Uint8Array(4)),
 /** The name with a fresh `-<8 hex>` ID, replacing any ID it already ends with. */
 export const withID = (name: string) => `${name.replace(/-[0-9a-f]{8}$/, '')}-${hexID()}`
 
-export const TEMPLATES: { id: Template; title: string; group?: string }[] = [
+export const PRESETS: { id: Preset; title: string; group?: string }[] = [
   { id: 'blank', title: 'Blank' },
   { id: 'simple', title: 'Shell' },
-  { id: 'gemini', title: 'Gemini Agent', group: 'ax-images' },
-  { id: 'openai', title: 'OpenAI Agent', group: 'ax-images' },
+  { id: 'antigravity', title: 'Antigravity Agent', group: 'ax-images' },
   { id: 'claude-managed-agents', title: 'Claude Agent', group: 'ax-images' },
   { id: 'github-actions', title: 'GitHub Actions Runner', group: 'ax-images' },
 ]
@@ -73,13 +72,12 @@ function blank(): Draft {
   }
 }
 
-/** Images and digests from github.com/rakyll/ax-images v0.3.1. */
+/** Images and digests from github.com/rakyll/ax-images v0.5.0. */
 const AX_IMAGES = 'ghcr.io/rakyll/ax-images'
 const IMAGE_DIGESTS = {
-  gemini: 'sha256:e3d8d953fc1ca112e3b0d00a655d82008996a328a5e8dbd1777f68f492fb91bc',
-  openai: 'sha256:9eeeb86183c1514ca4e3da8f412c2f704a457be13ba9797ebb1d942ba89417c1',
-  'claude-managed-agents': 'sha256:af84c607dd0b2870046d0e5617ccebc4188f54f24ed2aab8d52e14e4554d83f3',
-  'github-actions': 'sha256:1f5b1798b306e4214e77cf655afbc5a339c5b4b15c9ee4aebc04142d737e60eb',
+  antigravity: 'sha256:8025a987861673718564e0e648a3c7785d23c2514be8c7a3d3b133413d9bc81e',
+  'claude-managed-agents': 'sha256:1a532d86c58a5fea3005e9c525683cf8f354e2c403be6460a308ad2f8f0510c0',
+  'github-actions': 'sha256:63d02f8ff154efd5ee269414bc793bde90afb5aadedbe756e1c2f8389207c7bd',
 }
 const image = (name: keyof typeof IMAGE_DIGESTS) => `${AX_IMAGES}/${name}@${IMAGE_DIGESTS[name]}`
 
@@ -103,13 +101,13 @@ function agentTask(d: Draft, name: keyof typeof IMAGE_DIGESTS, config: string, s
     customConfig: config,
     env: secrets.map((key) => ({ id: uid(), key, value: '' })),
     workspaceMode: 'new',
-    wsName: `humanize-${name}`,
-    repos: [{ id: uid(), name: 'origin', repo: 'https://github.com/python-humanize/humanize.git', branch: 'main' }],
+    wsName: `itsdangerous-${name}`,
+    repos: [{ id: uid(), name: 'origin', repo: 'https://github.com/pallets/itsdangerous.git', branch: 'main' }],
     files: [{
       id: uid(),
       path: 'AGENTS.md',
       content: `# Working in this repo
-- Pure-Python library. Install with \`pip install -e ".[tests]"\`, test with \`pytest\`.
+- Pure-Python library. Install with \`pip install -e . pytest\`, test with \`pytest\`.
 - Keep changes small and focused; do not add runtime dependencies.
 - Do not push or open pull requests. Leave changes in the working tree.
 `,
@@ -118,38 +116,35 @@ function agentTask(d: Draft, name: keyof typeof IMAGE_DIGESTS, config: string, s
 }
 
 /**
- * The built-in templates leave spec.image empty so the server runs its
+ * The built-in presets leave spec.image empty so the server runs its
  * configured runner (AX_DEFAULT_TASK_IMAGE): a pinned gcr.io image would need
  * registry credentials that kind nodes and fresh machines don't have. The
- * ax-images templates use their public, digest-pinned ghcr.io images.
+ * ax-images presets use their public, digest-pinned ghcr.io images.
  */
-/** A template's draft, its task name ending in a fresh hex ID. */
-export function template(t: Template): Draft {
-  const d = templateDraft(t)
+/** A preset's draft, its task name ending in a fresh hex ID. */
+export function preset(p: Preset): Draft {
+  const d = presetDraft(p)
   return { ...d, name: withID(d.name) }
 }
 
-function templateDraft(t: Template): Draft {
+function presetDraft(p: Preset): Draft {
   const d = blank()
-  switch (t) {
+  switch (p) {
     case 'blank':
       return d
     case 'simple':
       return { ...d, name: 'shell-task', command: "sh -c 'echo $ENVIRONMENT'", env: [{ id: uid(), key: 'ENVIRONMENT', value: 'test' }] }
-    case 'gemini':
-      return agentTask(d, 'gemini', AGENT_PROMPT + `model: gemini-3.8-flash
-maxTurns: 50
+    case 'antigravity':
+      return agentTask(d, 'antigravity', AGENT_PROMPT + `model: gemini-3.8-flash
+maxTurns: 100
 builtinTools: ["google_search", "url_context"]
 `, ['GEMINI_API_KEY'])
-    case 'openai':
-      return agentTask(d, 'openai', AGENT_PROMPT + `model: gpt-5.5
-maxTurns: 50
-builtinTools: ["web_search"]
-`, ['OPENAI_API_KEY'])
     case 'claude-managed-agents':
-      // The agent's model, system prompt and tools live on the Claude Platform.
+      // The task creates the agent; set agentId instead to use one from the Claude Platform.
       return agentTask(d, 'claude-managed-agents', `environment: "env_..."
-agent: "agent_..."
+agent:
+  model: "claude-opus-5-5"
+  system: "You are a careful software engineer working in /workspace."
 ` + AGENT_PROMPT, ['ANTHROPIC_API_KEY', 'ANTHROPIC_ENVIRONMENT_KEY'])
     case 'github-actions':
       // Each job checks out its own code, so there's no workspace.
@@ -328,7 +323,7 @@ export function generate(d: Draft, redact = false): string {
 // MARK: State
 
 class DesignerStore {
-  draft: Draft = template('simple')
+  draft: Draft = preset('simple')
   private listeners = new Set<() => void>()
   subscribe = (l: () => void) => {
     this.listeners.add(l)
@@ -338,8 +333,8 @@ class DesignerStore {
     this.draft = { ...this.draft, ...patch }
     for (const l of this.listeners) l()
   }
-  load(t: Template) {
-    this.draft = template(t)
+  load(p: Preset) {
+    this.draft = preset(p)
     for (const l of this.listeners) l()
   }
   enterRawMode() {

@@ -6,7 +6,7 @@ import {
 import { Dropdown } from '../App'
 import { PageHeader, Segmented, Toggle } from '../components'
 import {
-  TEMPLATES, canApply, cpuString, designer, formatEnv, generate, isSecret, withID, issues, memoryString, parseEnv, uid, useDraft,
+  PRESETS, canApply, cpuString, designer, formatEnv, generate, isSecret, withID, issues, memoryString, parseEnv, uid, useDraft,
   validateEnvName, type ConfigMode, type Draft, type KeyValue, type WorkspaceMode,
 } from '../model/designer'
 import { validateImage, validateLabel } from '../model/resources'
@@ -50,10 +50,10 @@ export function Designer() {
       <div className="designer-head">
         <PageHeader title="Deploy" subtitle="Compose a task, its workspace and model, then create them.">
           <div className="row">
-            <Dropdown label={<><LayoutGrid size={14} />Templates</>}>
-              {(close) => TEMPLATES.map((t, i) => (
+            <Dropdown label={<><LayoutGrid size={14} />Presets</>}>
+              {(close) => PRESETS.map((t, i) => (
                 <Fragment key={t.id}>
-                  {t.group && t.group !== TEMPLATES[i - 1].group && (
+                  {t.group && t.group !== PRESETS[i - 1].group && (
                     <><div className="menu-sep" /><div className="menu-heading caption faint">{t.group}</div></>
                   )}
                   <button className="menu-item" onClick={() => { designer.load(t.id); close() }}>
