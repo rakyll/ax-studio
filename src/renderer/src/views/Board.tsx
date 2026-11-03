@@ -299,7 +299,7 @@ function actionsFor(t: AXTask, onDelete: () => void, onMove: () => void): Action
   if (t.phase === 'running' || t.phase === 'pending')
     a.push({ label: 'Suspend', icon: Pause, run: () => void store.suspend(t) })
   if (t.phase === 'running') a.push({ label: 'Terminal', icon: Terminal, run: () => store.openTerminal(t) })
-  a.push({ label: 'Move to Cluster…', icon: ArrowRightLeft, run: onMove })
+  a.push({ label: 'Move…', icon: ArrowRightLeft, run: onMove })
   a.push({ label: 'Delete…', icon: Trash2, run: onDelete, danger: true })
   return a
 }
