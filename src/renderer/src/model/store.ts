@@ -160,6 +160,14 @@ class Store {
     this.set({ section })
   }
 
+  /** Opens Activity and selects the named task, now or once it shows up. */
+  showTask(name: string | null) {
+    this.askedTask = name
+    this.askedTerminal = false
+    this.set({ ...this.takeAskedTask(this.state.tasks) })
+    this.setSection('overview')
+  }
+
   updateSettings(patch: Partial<Settings>) {
     const settings = { ...this.state.settings, ...patch }
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))

@@ -29,11 +29,14 @@ export function Designer() {
     if (!canApply(draft) || applying) return
     setApplying(true)
     setResult(null)
-    const r = await store.apply(generate(draft))
+    const yaml = generate(draft)
+    const r = await store.apply(yaml)
     setResult({ ok: r.ok, text: r.ok ? r.stdout.trim() : r.error })
-    // A fresh ID so applying again creates a new task instead of colliding.
-    if (r.ok && !draft.rawMode) designer.set({ name: withID(draft.name) })
     setApplying(false)
+    if (!r.ok) return
+    store.showTask(draft.rawMode ? taskName(yaml) : draft.name)
+    // A fresh ID so applying again creates a new task instead of colliding.
+    if (!draft.rawMode) designer.set({ name: withID(draft.name) })
   }, [applying])
 
   useEffect(() => {
@@ -89,6 +92,12 @@ export function Designer() {
 }
 
 // MARK: Layout
+
+/** The Task's name in a raw manifest, if there is one. */
+function taskName(yaml: string): string | null {
+  const doc = yaml.split(/^---\s*$/m).find((y) => /^kind:\s*Task\s*$/m.test(y))
+  return doc?.match(/^metadata:\s*\n(?:\s+.*\n)*?\s+name:\s*["']?([^"'\s]+)/m)?.[1] ?? null
+}
 
 function SplitPane({ left, right, fraction, onChange }: {
   left: ReactNode
